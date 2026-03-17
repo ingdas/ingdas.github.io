@@ -288,10 +288,6 @@
         sel.addEventListener('change', () => setTranspose(parseInt(sel.value), sel, false));
         row.appendChild(sel);
 
-        // activate 0 by default
-        activeQuick = row.querySelector('.t-btn');
-        activeQuick.classList.add('active');
-
         div.appendChild(row);
       }
       resultsEl.appendChild(div);
