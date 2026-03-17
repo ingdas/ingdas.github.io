@@ -11,6 +11,7 @@
 
     #main { max-width: 680px; margin: 0 auto; padding: 16px; }
 
+    #searchWrap { position: relative; }
     #searchBox {
       width: 100%; padding: 12px 16px;
       border: 1px solid #333; border-radius: 8px;
@@ -19,6 +20,20 @@
     }
     #searchBox:focus { outline: none; border-color: #5b9bd5; box-shadow: 0 0 0 2px #5b9bd533; }
     #searchBox::placeholder { color: #666; }
+
+    #suggestions {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      background: #1e1e1e; border: 1px solid #444; border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.5);
+      z-index: 100; display: none;
+    }
+    .sug-item {
+      padding: 9px 16px; cursor: pointer; font-size: 0.92rem; color: #ccc;
+    }
+    .sug-item:first-child { border-radius: 8px 8px 0 0; }
+    .sug-item:last-child  { border-radius: 0 0 8px 8px; }
+    .sug-item:only-child  { border-radius: 8px; }
+    .sug-item:hover, .sug-item.focused { background: #2a3d52; color: #e0e0e0; }
 
     #corsNote {
       background: #2a2500; border: 1px solid #665500; border-radius: 6px;
@@ -43,26 +58,49 @@
     .song .info { flex: 1; overflow: hidden; }
     .song .title  { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .song .artist { font-size: 0.85rem; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .song .arr    { font-size: 0.75rem; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .song .arr    { font-size: 0.75rem; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    .t-strip {
-      display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px;
+    .song-top { cursor: pointer; }
+    .song-top:hover .title { color: #5b9bd5; }
+
+    .open-btn {
+      width: 100%; margin-top: 10px; padding: 7px;
+      border: 1px solid #333; border-radius: 5px;
+      background: #2a2a2a; color: #aaa; cursor: pointer;
+      font-size: 0.82rem; font-weight: 500;
+      transition: background .1s;
+    }
+    .open-btn:hover { background: #1a2d42; border-color: #5b9bd5; color: #e0e0e0; }
+    .open-btn.active { background: #1976d2; border-color: #1565c0; color: #fff; }
+
+    .t-row {
+      display: flex; gap: 4px; align-items: center; margin-top: 10px;
     }
     .t-btn {
-      flex: 1; min-width: 32px; padding: 5px 4px;
-      border: 1px solid #333; border-radius: 5px;
-      background: #2a2a2a; color: #e0e0e0; cursor: pointer; font-size: 0.78rem; font-weight: 500;
-      text-align: center; transition: background .1s;
+      padding: 5px 10px; border: 1px solid #333; border-radius: 5px;
+      background: #2a2a2a; color: #aaa; cursor: pointer;
+      font-size: 0.78rem; font-weight: 500;
+      transition: background .1s; white-space: nowrap;
     }
-    .t-btn:hover  { background: #1a2d42; border-color: #5b9bd5; }
-    .t-btn.zero   { border-color: #555; }
+    .t-btn:hover  { background: #1a2d42; border-color: #5b9bd5; color: #e0e0e0; }
     .t-btn.active { background: #1976d2; border-color: #1565c0; color: #fff; }
+    .t-select {
+      padding: 5px 6px; border: 1px solid #333; border-radius: 5px;
+      background: #2a2a2a; color: #aaa; cursor: pointer;
+      font-size: 0.78rem; font-weight: 500;
+      transition: background .1s; margin-left: auto;
+    }
+    .t-select:focus { outline: none; border-color: #5b9bd5; }
+    .t-select.active { background: #1976d2; border-color: #1565c0; color: #fff; }
   </style>
 </head>
 <body>
 
 <div id="main">
-  <input id="searchBox" type="search" placeholder="Search Sheet Music Direct…" autocomplete="off" />
+  <div id="searchWrap">
+    <input id="searchBox" type="search" placeholder="Search Sheet Music Direct…" autocomplete="off" />
+    <div id="suggestions"></div>
+  </div>
   <div id="corsNote">Search failed. Check your internet connection and try again.</div>
   <div id="status"></div>
   <div id="results"></div>
@@ -72,19 +110,78 @@
   const TOPIC      = 'sheetshare-home'; // must match NTFY_TOPIC in SheetShareApplication.kt
   const SEARCH_URL = 'https://mobileapi.sheetmusicdirect.com/1.0/devices/82419D36-C4A5-4861-91D2-BB8B648FC107/searchwithfacets';
   const PROXY      = url => `https://proxy.corsfix.com/?${url}`;
-  const SEMITONES  = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6];
+  // ── Search ────────────────────────────────────────────────────────────────
+  const SUGGEST_URL = 'https://www.sheetmusicdirect.com/api/frontend/SearchKeywordSuggest.ashx';
+
+  const searchBox  = document.getElementById('searchBox');
+  const resultsEl  = document.getElementById('results');
+  const statusEl   = document.getElementById('status');
+  const suggestEl  = document.getElementById('suggestions');
+  let debounce, sugDebounce, focusedIdx = -1;
+
+  // ── Suggestions ───────────────────────────────────────────────────────────
+  function showSuggestions(items) {
+    suggestEl.innerHTML = '';
+    focusedIdx = -1;
+    if (!items.length) { suggestEl.style.display = 'none'; return; }
+    items.forEach(text => {
+      const d = document.createElement('div');
+      d.className = 'sug-item';
+      d.textContent = text;
+      d.addEventListener('mousedown', e => {
+        e.preventDefault();
+        searchBox.value = text;
+        hideSuggestions();
+        doSearch(text);
+      });
+      suggestEl.appendChild(d);
+    });
+    suggestEl.style.display = 'block';
+  }
+
+  function hideSuggestions() { suggestEl.style.display = 'none'; focusedIdx = -1; }
+
+  async function fetchSuggestions(term) {
+    try {
+      const res = await fetch(PROXY(`${SUGGEST_URL}?limit=10&term=${encodeURIComponent(term)}`));
+      if (!res.ok) return;
+      showSuggestions(await res.json());
+    } catch (_) {}
+  }
+
+  searchBox.addEventListener('keydown', e => {
+    const items = suggestEl.querySelectorAll('.sug-item');
+    if (!items.length || suggestEl.style.display === 'none') return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (focusedIdx >= 0) items[focusedIdx].classList.remove('focused');
+      focusedIdx = Math.min(focusedIdx + 1, items.length - 1);
+      items[focusedIdx].classList.add('focused');
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (focusedIdx >= 0) items[focusedIdx].classList.remove('focused');
+      focusedIdx = Math.max(focusedIdx - 1, 0);
+      items[focusedIdx].classList.add('focused');
+    } else if (e.key === 'Enter' && focusedIdx >= 0) {
+      e.preventDefault();
+      const text = items[focusedIdx].textContent;
+      searchBox.value = text;
+      hideSuggestions();
+      doSearch(text);
+    } else if (e.key === 'Escape') {
+      hideSuggestions();
+    }
+  });
+
+  searchBox.addEventListener('blur', () => setTimeout(hideSuggestions, 150));
 
   // ── Search ────────────────────────────────────────────────────────────────
-  const searchBox = document.getElementById('searchBox');
-  const resultsEl = document.getElementById('results');
-  const statusEl  = document.getElementById('status');
-  let debounce;
-  let activeBtn = null;
-
   searchBox.addEventListener('input', () => {
     clearTimeout(debounce);
+    clearTimeout(sugDebounce);
     const q = searchBox.value.trim();
-    if (!q) { resultsEl.innerHTML = ''; statusEl.textContent = ''; return; }
+    if (!q) { resultsEl.innerHTML = ''; statusEl.textContent = ''; hideSuggestions(); return; }
+    sugDebounce = setTimeout(() => fetchSuggestions(q), 150);
     debounce = setTimeout(() => doSearch(q), 350);
   });
 
@@ -111,13 +208,22 @@
   }
 
   function renderResults(products) {
+    products = [...products].sort((a, b) => {
+      const titleCmp = a.title.localeCompare(b.title);
+      if (titleCmp !== 0) return titleCmp;
+      const isPV = s => /piano\s*&\s*vocal/i.test(s ?? '');
+      return isPV(b.arrangement) - isPV(a.arrangement);
+    });
     resultsEl.innerHTML = '';
     for (const p of products) {
       const div = document.createElement('div');
       div.className = 'song';
 
+      let semitone = 0;
+
       const top = document.createElement('div');
       top.className = 'song-top';
+      const isPdf = p.score_type === 'Pdf';
       top.innerHTML = `
         <img src="${esc(p.url_album_img)}" alt="" loading="lazy" onerror="this.style.display='none'" />
         <div class="info">
@@ -128,24 +234,68 @@
       `;
       div.appendChild(top);
 
-      const strip = document.createElement('div');
-      strip.className = 't-strip';
-      for (const n of SEMITONES) {
+      if (isPdf) {
         const btn = document.createElement('button');
-        btn.className = 't-btn' + (n === 0 ? ' zero' : '');
-        btn.textContent = n > 0 ? `+${n}` : `${n}`;
-        btn.addEventListener('click', () => { setActiveBtn(btn); openSongAt(p.id, p.title, n, p.url_album_img, p.artist); });
-        strip.appendChild(btn);
+        btn.className = 'open-btn';
+        btn.textContent = 'Open on device';
+        btn.addEventListener('click', () => {
+          btn.classList.add('active');
+          openSongAt(p.id, p.title, 0, p.url_album_img, p.artist);
+        });
+        div.appendChild(btn);
+      } else {
+        top.addEventListener('click', () => openSongAt(p.id, p.title, semitone, p.url_album_img, p.artist));
+
+        const row = document.createElement('div');
+        row.className = 't-row';
+
+        let activeQuick = null;
+
+        const setTranspose = (n, sourceEl, isQuick) => {
+          if (activeQuick) activeQuick.classList.remove('active');
+          activeQuick = null;
+          sel.classList.remove('active');
+          if (isQuick) {
+            activeQuick = sourceEl;
+            sourceEl.classList.add('active');
+            sel.value = String(n);
+          } else {
+            sel.classList.add('active');
+          }
+          semitone = n;
+          top.click();
+        };
+
+        const makeQuickBtn = n => {
+          const btn = document.createElement('button');
+          btn.className = 't-btn';
+          btn.textContent = n > 0 ? `+${n}` : '0';
+          btn.addEventListener('click', () => setTranspose(n, btn, true));
+          return btn;
+        };
+
+        for (const n of [0, 3, 5, 6]) row.appendChild(makeQuickBtn(n));
+
+        const sel = document.createElement('select');
+        sel.className = 't-select';
+        for (let n = -6; n <= 6; n++) {
+          const opt = document.createElement('option');
+          opt.value = String(n);
+          opt.textContent = n > 0 ? `+${n}` : String(n);
+          if (n === 0) opt.selected = true;
+          sel.appendChild(opt);
+        }
+        sel.addEventListener('change', () => setTranspose(parseInt(sel.value), sel, false));
+        row.appendChild(sel);
+
+        // activate 0 by default
+        activeQuick = row.querySelector('.t-btn');
+        activeQuick.classList.add('active');
+
+        div.appendChild(row);
       }
-      div.appendChild(strip);
       resultsEl.appendChild(div);
     }
-  }
-
-  function setActiveBtn(btn) {
-    if (activeBtn) activeBtn.classList.remove('active');
-    activeBtn = btn;
-    btn.classList.add('active');
   }
 
   // ── Send to Android ───────────────────────────────────────────────────────
