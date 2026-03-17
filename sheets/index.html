@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SheetShare Remote</title>
+  <link rel="icon" type="image/png" href="data:image/png;base64,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" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #121212; color: #e0e0e0; }
+
+    #main { max-width: 680px; margin: 0 auto; padding: 16px; }
+
+    #searchBox {
+      width: 100%; padding: 12px 16px;
+      border: 1px solid #333; border-radius: 8px;
+      font-size: 1rem; background: #1e1e1e; color: #e0e0e0;
+      box-shadow: 0 1px 3px rgba(0,0,0,.4);
+    }
+    #searchBox:focus { outline: none; border-color: #5b9bd5; box-shadow: 0 0 0 2px #5b9bd533; }
+    #searchBox::placeholder { color: #666; }
+
+    #corsNote {
+      background: #2a2500; border: 1px solid #665500; border-radius: 6px;
+      padding: 10px 14px; margin-top: 12px; font-size: 0.82rem; display: none; color: #ffdd57;
+    }
+
+    #status { font-size: 0.8rem; color: #666; margin-top: 10px; min-height: 18px; }
+    #status.error { color: #ef5350; }
+    #status.sent  { color: #66bb6a; }
+
+    #results { margin-top: 12px; }
+
+    .song {
+      background: #1e1e1e; border-radius: 8px; padding: 10px 14px;
+      margin-bottom: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.4);
+    }
+    .song-top {
+      display: flex; gap: 12px; align-items: center;
+    }
+    .song img { width: 56px; height: 56px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+    .song .info { flex: 1; overflow: hidden; }
+    .song .title  { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .song .artist { font-size: 0.85rem; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .song .arr    { font-size: 0.75rem; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .t-strip {
+      display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px;
+    }
+    .t-btn {
+      flex: 1; min-width: 32px; padding: 5px 4px;
+      border: 1px solid #333; border-radius: 5px;
+      background: #2a2a2a; color: #e0e0e0; cursor: pointer; font-size: 0.78rem; font-weight: 500;
+      text-align: center; transition: background .1s;
+    }
+    .t-btn:hover  { background: #1a2d42; border-color: #5b9bd5; }
+    .t-btn.zero   { border-color: #555; }
+    .t-btn.active { background: #1976d2; border-color: #1565c0; color: #fff; }
+  </style>
+</head>
+<body>
+
+<div id="main">
+  <input id="searchBox" type="search" placeholder="Search Sheet Music Direct…" autocomplete="off" />
+  <div id="corsNote">Search failed. Check your internet connection and try again.</div>
+  <div id="status"></div>
+  <div id="results"></div>
+</div>
+
+<script>
+  const TOPIC      = 'sheetshare-home'; // must match NTFY_TOPIC in SheetShareApplication.kt
+  const SEARCH_URL = 'https://mobileapi.sheetmusicdirect.com/1.0/devices/82419D36-C4A5-4861-91D2-BB8B648FC107/searchwithfacets';
+  const PROXY      = url => `https://proxy.corsfix.com/?${url}`;
+  const SEMITONES  = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6];
+
+  // ── Search ────────────────────────────────────────────────────────────────
+  const searchBox = document.getElementById('searchBox');
+  const resultsEl = document.getElementById('results');
+  const statusEl  = document.getElementById('status');
+  let debounce;
+  let activeBtn = null;
+
+  searchBox.addEventListener('input', () => {
+    clearTimeout(debounce);
+    const q = searchBox.value.trim();
+    if (!q) { resultsEl.innerHTML = ''; statusEl.textContent = ''; return; }
+    debounce = setTimeout(() => doSearch(q), 350);
+  });
+
+  async function doSearch(query) {
+    statusEl.className = '';
+    statusEl.textContent = 'Searching…';
+    const body = JSON.stringify({ query, limit: 20, page: 1, sort: [] });
+    try {
+      const res = await fetch(PROXY(SEARCH_URL), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      document.getElementById('corsNote').style.display = 'none';
+      renderResults(data.Products || []);
+      statusEl.textContent = data.Products?.length ? '' : 'No results.';
+    } catch (e) {
+      statusEl.className = 'error';
+      statusEl.textContent = 'Search failed — see note below.';
+      document.getElementById('corsNote').style.display = 'block';
+    }
+  }
+
+  function renderResults(products) {
+    resultsEl.innerHTML = '';
+    for (const p of products) {
+      const div = document.createElement('div');
+      div.className = 'song';
+
+      const top = document.createElement('div');
+      top.className = 'song-top';
+      top.innerHTML = `
+        <img src="${esc(p.url_album_img)}" alt="" loading="lazy" onerror="this.style.display='none'" />
+        <div class="info">
+          <div class="title">${esc(p.title)}</div>
+          <div class="artist">${esc(p.artist)}</div>
+          <div class="arr">${esc(p.arrangement)}</div>
+        </div>
+      `;
+      div.appendChild(top);
+
+      const strip = document.createElement('div');
+      strip.className = 't-strip';
+      for (const n of SEMITONES) {
+        const btn = document.createElement('button');
+        btn.className = 't-btn' + (n === 0 ? ' zero' : '');
+        btn.textContent = n > 0 ? `+${n}` : `${n}`;
+        btn.addEventListener('click', () => { setActiveBtn(btn); openSongAt(p.id, p.title, n, p.url_album_img, p.artist); });
+        strip.appendChild(btn);
+      }
+      div.appendChild(strip);
+      resultsEl.appendChild(div);
+    }
+  }
+
+  function setActiveBtn(btn) {
+    if (activeBtn) activeBtn.classList.remove('active');
+    activeBtn = btn;
+    btn.classList.add('active');
+  }
+
+  // ── Send to Android ───────────────────────────────────────────────────────
+  async function openSongAt(productId, title, semitones, coverUrl, artist) {
+    statusEl.className = '';
+    statusEl.textContent = 'Sending…';
+    await sendToDevice({ type: 'song', productId, title, coverUrl, artist });
+    await sendToDevice({ type: 'transpose', semitones });
+    statusEl.className = 'sent';
+    statusEl.textContent = `✓ "${title}"` + (semitones !== 0 ? ` at ${semitones > 0 ? '+' : ''}${semitones}` : '');
+  }
+
+  async function sendToDevice(payload) {
+    const res = await fetch(`https://ntfy.sh/${encodeURIComponent(TOPIC)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(`ntfy ${res.status}`);
+  }
+
+  function esc(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+</script>
+</body>
+</html>
