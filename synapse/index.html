@@ -1,0 +1,2790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SYNAPSE — Navigate the Semantic Mind</title>
+  <meta name="description" content="Bridge words through semantic space using AI embeddings. A word puzzle game powered by real neural networks." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── Reset & Base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Outfit', system-ui, sans-serif;
+      background: #050510;
+      color: #e2e8f0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── CSS Variables ─────────────────────────────────────────── */
+    :root {
+      --bg:        #050510;
+      --bg2:       #0d0d24;
+      --current:   #00f5d4;
+      --target:    #ff6b6b;
+      --visited:   #a855f7;
+      --gold:      #ffd166;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --panel-bg:  rgba(255,255,255,0.04);
+      --panel-border: rgba(255,255,255,0.08);
+      --radius:    14px;
+      --radius-sm: 8px;
+      --glow-c:    0 0 20px rgba(0,245,212,0.4);
+      --glow-t:    0 0 20px rgba(255,107,107,0.4);
+      --glow-v:    0 0 20px rgba(168,85,247,0.4);
+    }
+
+    /* ─── Screens ───────────────────────────────────────────────── */
+    .screen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .screen canvas.bg-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    /* ─── Loading Screen ────────────────────────────────────────── */
+    #loading-screen { background: var(--bg); }
+    .loading-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      text-align: center;
+    }
+    .loading-logo {
+      font-size: 52px;
+      font-weight: 900;
+      letter-spacing: 12px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, var(--current), #0ea5e9);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 24px rgba(0,245,212,0.5));
+    }
+    .loading-tagline {
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--muted);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+    .loading-bar-wrap {
+      width: 260px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .loading-track {
+      height: 3px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    #loading-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--current), #0ea5e9);
+      border-radius: 99px;
+      transition: width 0.3s ease;
+      box-shadow: 0 0 10px rgba(0,245,212,0.6);
+    }
+    #loading-status {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      letter-spacing: 1px;
+    }
+
+    /* ─── Home Screen ───────────────────────────────────────────── */
+    #home-screen { background: var(--bg); display: none; }
+    .home-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+    }
+    .game-logo {
+      font-size: 72px;
+      font-weight: 900;
+      letter-spacing: 14px;
+      text-transform: uppercase;
+      line-height: 1;
+    }
+    .logo-syn {
+      background: linear-gradient(135deg, var(--current), #0ea5e9);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 30px rgba(0,245,212,0.6));
+    }
+    .logo-apse {
+      background: linear-gradient(135deg, #0ea5e9, var(--visited));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .game-subtitle {
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--muted);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+    .home-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 260px;
+    }
+
+    /* ─── Buttons ───────────────────────────────────────────────── */
+    button { cursor: pointer; border: none; font-family: inherit; transition: all 0.2s; }
+    .btn-primary {
+      padding: 14px 24px;
+      background: linear-gradient(135deg, var(--current), #0ea5e9);
+      color: var(--bg);
+      font-size: 15px;
+      font-weight: 700;
+      border-radius: var(--radius);
+      letter-spacing: 1px;
+      box-shadow: 0 0 24px rgba(0,245,212,0.3);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 32px rgba(0,245,212,0.5); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-secondary {
+      padding: 14px 24px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: var(--radius);
+      backdrop-filter: blur(12px);
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); }
+    .btn-ghost {
+      padding: 10px 20px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 400;
+      border-radius: var(--radius-sm);
+    }
+    .btn-ghost:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+    .btn-icon {
+      width: 40px; height: 40px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      color: var(--muted);
+      font-size: 18px;
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(12px);
+    }
+    .btn-icon:hover { color: var(--text); background: rgba(255,255,255,0.08); }
+
+    /* ─── Game Screen ───────────────────────────────────────────── */
+    #game-screen {
+      display: none;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+      background: var(--bg);
+    }
+
+    /* Header */
+    #game-header {
+      flex-shrink: 0;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 12px;
+      border-bottom: 1px solid var(--panel-border);
+      background: rgba(5,5,16,0.8);
+      backdrop-filter: blur(16px);
+      z-index: 10;
+    }
+    .hud-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 54px;
+    }
+    .hud-label { font-size: 9px; font-weight: 600; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+    .hud-value { font-size: 22px; font-weight: 700; color: var(--text); line-height: 1; }
+    #hud-step-count { color: var(--current); }
+    .hud-sep { flex: 1; }
+    .puzzle-label {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: 400;
+    }
+
+    /* Content area */
+    #game-content {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* Side panels */
+    .side-panel {
+      width: 200px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      gap: 12px;
+      border-right: 1px solid var(--panel-border);
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .panel-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    /* Path panel */
+    #path-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+    .path-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      animation: fadeSlideIn 0.3s ease;
+    }
+    .path-item.current { border-color: rgba(0,245,212,0.3); background: rgba(0,245,212,0.05); }
+    .path-item.start { border-color: rgba(0,245,212,0.2); }
+    .path-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .path-dot.start { background: var(--current); }
+    .path-dot.visited { background: var(--visited); }
+    .path-dot.current { background: var(--current); box-shadow: 0 0 8px var(--current); }
+    .path-word { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .path-sim { font-size: 10px; color: var(--muted); margin-left: auto; flex-shrink: 0; }
+
+    /* Canvas */
+    #canvas-container {
+      flex: 1;
+      position: relative;
+      min-width: 0;
+      overflow: hidden;
+    }
+    #game-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+
+    /* Input bar */
+    #input-bar {
+      flex-shrink: 0;
+      height: 76px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 12px;
+      border-top: 1px solid var(--panel-border);
+      background: rgba(5,5,16,0.9);
+      backdrop-filter: blur(16px);
+    }
+    .current-badge {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .current-badge-label { font-size: 8px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; font-weight: 600; }
+    #current-word-badge {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--current);
+      text-shadow: var(--glow-c);
+      max-width: 120px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .input-wrapper {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .input-wrapper:focus-within {
+      border-color: rgba(0,245,212,0.4);
+      box-shadow: 0 0 0 3px rgba(0,245,212,0.08);
+    }
+    .input-wrapper.shake { animation: shake 0.35s ease; }
+    .input-wrapper.flash-green { animation: flashGreen 0.4s ease; }
+    .input-wrapper.flash-gold { animation: flashGold 0.4s ease; }
+    #word-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      caret-color: var(--current);
+    }
+    #word-input::placeholder { color: var(--muted); font-weight: 400; }
+    #word-input:disabled { opacity: 0.5; }
+    .btn-submit {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, var(--current), #0ea5e9);
+      color: var(--bg);
+      font-size: 20px;
+      font-weight: 700;
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .btn-submit:hover { transform: scale(1.05); box-shadow: 0 0 16px rgba(0,245,212,0.4); }
+    .btn-submit:disabled { opacity: 0.4; transform: none; cursor: not-allowed; }
+    .btn-give-up {
+      flex-shrink: 0;
+      padding: 8px 14px;
+      background: transparent;
+      border: 1px solid rgba(255,107,107,0.2);
+      color: rgba(255,107,107,0.5);
+      font-size: 12px;
+      font-weight: 500;
+      border-radius: var(--radius-sm);
+    }
+    .btn-give-up:hover { background: rgba(255,107,107,0.08); border-color: rgba(255,107,107,0.4); color: var(--target); }
+    .btn-undo {
+      flex-shrink: 0;
+      padding: 8px 12px;
+      background: transparent;
+      border: 1px solid rgba(168,85,247,0.25);
+      color: rgba(168,85,247,0.6);
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-family: inherit;
+    }
+    .btn-undo:hover:not(:disabled) { background: rgba(168,85,247,0.08); border-color: rgba(168,85,247,0.4); color: var(--visited); }
+    .btn-undo:disabled { opacity: 0.3; cursor: not-allowed; }
+    @media (max-width: 480px) { .btn-undo { padding: 8px 8px; } }
+    .checking-spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.1);
+      border-top-color: var(--current);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      flex-shrink: 0;
+      display: none;
+    }
+    .checking-spinner.visible { display: block; }
+
+    /* ─── Win Screen ────────────────────────────────────────────── */
+    #win-screen { display: none; background: transparent; z-index: 10; justify-content: flex-end; padding-bottom: 24px; }
+    .win-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      max-width: 480px;
+      width: 90%;
+      background: rgba(8,8,18,0.72);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      backdrop-filter: blur(10px);
+    }
+    .win-title {
+      font-size: 42px;
+      font-weight: 900;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, var(--current), var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 20px rgba(255,209,102,0.4));
+    }
+    .win-steps {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .win-steps .step-count { color: var(--gold); font-weight: 700; font-size: 48px; line-height: 1; }
+    .win-steps .step-label { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+    .score-card {
+      width: 100%;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius);
+      padding: 20px;
+      backdrop-filter: blur(16px);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .score-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+    }
+    .score-row .label { color: var(--muted); }
+    .score-row .value { font-weight: 700; }
+    .score-row.total {
+      border-top: 1px solid var(--panel-border);
+      padding-top: 12px;
+      font-size: 18px;
+    }
+    .score-row.total .value { color: var(--gold); font-size: 24px; }
+    .win-buttons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+    /* ─── In-Game Tutorial ───────────────────────────────────────── */
+    #tut-stage {
+      position: fixed; inset: 0; z-index: 150;
+      display: none;
+    }
+    #tut-stage.active { display: block; }
+    #tut-dim {
+      position: absolute; inset: 0;
+      pointer-events: all;
+    }
+    #tut-ring {
+      position: fixed;
+      border: 2px solid var(--current);
+      box-shadow: 0 0 0 4000px rgba(5,5,16,0.80), 0 0 28px rgba(0,245,212,0.55);
+      pointer-events: none;
+      z-index: 151;
+      transition: left 0.45s cubic-bezier(0.34,1.2,0.64,1),
+                  top  0.45s cubic-bezier(0.34,1.2,0.64,1),
+                  width 0.45s cubic-bezier(0.34,1.2,0.64,1),
+                  height 0.45s cubic-bezier(0.34,1.2,0.64,1);
+    }
+    #tut-card {
+      position: fixed;
+      width: 272px;
+      background: #0d0d24;
+      border: 1px solid rgba(0,245,212,0.28);
+      border-radius: 16px;
+      padding: 20px 22px;
+      display: flex; flex-direction: column; gap: 12px;
+      pointer-events: all;
+      z-index: 152;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.55);
+    }
+    #tut-step-counter {
+      font-size: 10px; font-weight: 600; color: var(--muted);
+      letter-spacing: 2px; text-transform: uppercase;
+    }
+    #tut-card-title { font-size: 15px; font-weight: 700; color: var(--text); }
+    #tut-card-body  { font-size: 13px; line-height: 1.65; color: var(--muted); }
+    #tut-card-body strong { color: var(--text); font-weight: 600; }
+    .tut-card-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 4px;
+    }
+    #tut-ok-btn {
+      padding: 8px 18px;
+      background: linear-gradient(135deg, var(--current), #0ea5e9);
+      color: var(--bg); font-size: 13px; font-weight: 700;
+      border-radius: var(--radius-sm); border: none;
+      cursor: pointer; transition: all 0.18s;
+    }
+    #tut-ok-btn:hover { transform: translateY(-1px); box-shadow: 0 0 14px rgba(0,245,212,0.4); }
+    #tut-skip-btn {
+      background: transparent; border: none; cursor: pointer;
+      color: var(--muted); font-size: 12px; font-family: inherit;
+      padding: 6px; border-radius: var(--radius-sm); transition: color 0.18s;
+    }
+    #tut-skip-btn:hover { color: var(--text); }
+    /* Small hint shown while waiting for the player to type */
+    #tut-hint {
+      position: fixed; bottom: 92px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 152;
+      background: rgba(0,245,212,0.10);
+      border: 1px solid rgba(0,245,212,0.30);
+      border-radius: 99px;
+      padding: 7px 20px;
+      font-size: 13px; font-weight: 500; color: var(--current);
+      pointer-events: none;
+      display: none;
+      white-space: nowrap;
+      animation: pulse 2s infinite;
+    }
+
+    /* ─── Toasts ────────────────────────────────────────────────── */
+    #toast-container {
+      position: fixed;
+      top: 80px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .toast {
+      padding: 10px 20px;
+      border-radius: 99px;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      backdrop-filter: blur(12px);
+      pointer-events: none;
+      white-space: nowrap;
+      animation: toastIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .toast.success  { background: rgba(0,245,212,0.15); border: 1px solid rgba(0,245,212,0.3); color: var(--current); }
+    .toast.warning  { background: rgba(255,209,102,0.12); border: 1px solid rgba(255,209,102,0.3); color: var(--gold); }
+    .toast.error    { background: rgba(255,107,107,0.12); border: 1px solid rgba(255,107,107,0.3); color: var(--target); }
+    .toast.neutral  { background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.3); color: var(--visited); }
+
+    /* ─── Keyframe Animations ───────────────────────────────────── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      15% { transform: translateX(-10px); }
+      30% { transform: translateX(9px); }
+      45% { transform: translateX(-7px); }
+      60% { transform: translateX(6px); }
+      75% { transform: translateX(-3px); }
+      90% { transform: translateX(2px); }
+    }
+    @keyframes flashGreen {
+      0% { border-color: rgba(255,255,255,0.1); box-shadow: none; }
+      40% { border-color: rgba(0,245,212,0.8); box-shadow: 0 0 20px rgba(0,245,212,0.3); }
+      100% { border-color: rgba(0,245,212,0.4); box-shadow: none; }
+    }
+    @keyframes flashGold {
+      0% { border-color: rgba(255,255,255,0.1); box-shadow: none; }
+      40% { border-color: rgba(255,209,102,0.9); box-shadow: 0 0 24px rgba(255,209,102,0.4); }
+      100% { border-color: rgba(255,255,255,0.1); box-shadow: none; }
+    }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(-10px) scale(0.9); }
+      to   { opacity: 1; transform: translateY(0)    scale(1); }
+    }
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes nodePop {
+      0%   { transform: scale(0); opacity: 0; }
+      70%  { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    /* ─── Custom Game Modal ────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(5,5,16,0.85);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-card {
+      background: var(--bg2);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius);
+      padding: 28px 28px 24px;
+      width: 320px;
+      max-width: 90vw;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+    }
+    .modal-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .modal-subtitle {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: -10px;
+    }
+    .modal-field { display: flex; flex-direction: column; gap: 6px; }
+    .modal-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .modal-input {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .modal-input:focus {
+      border-color: rgba(0,245,212,0.4);
+      box-shadow: 0 0 0 3px rgba(0,245,212,0.08);
+    }
+    .modal-input::placeholder { color: var(--muted); font-weight: 400; }
+    .modal-input:disabled { opacity: 0.5; }
+    .modal-error {
+      font-size: 13px;
+      color: var(--target);
+      background: rgba(255,107,107,0.08);
+      border: 1px solid rgba(255,107,107,0.2);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+    }
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    /* ─── Scrollbars ────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
+
+    /* ─── Responsive ────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .game-logo { font-size: 48px; }
+      #path-panel { display: none; }
+      #game-header { padding: 0 10px; }
+      .hud-item { min-width: 44px; }
+      .hud-value { font-size: 18px; }
+    }
+    @media (max-width: 480px) {
+
+      .btn-give-up { display: none; }
+    }
+    @media (orientation: portrait) {
+      #win-screen {
+        justify-content: center;
+        padding-bottom: 0;
+      }
+    }
+    @media (orientation: landscape) {
+      #win-screen {
+        justify-content: center;
+        align-items: flex-start;
+        padding-bottom: 0;
+        padding-left: 24px;
+      }
+      .win-content {
+        max-width: 340px;
+        max-height: calc(100vh - 48px);
+        overflow-y: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ─── Loading Screen ────────────────────────────────────── -->
+  <div id="loading-screen" class="screen">
+    <canvas id="loading-canvas" class="bg-canvas"></canvas>
+    <div class="loading-content">
+      <div class="loading-logo">SYNAPSE</div>
+      <div class="loading-tagline">Navigate the semantic mind</div>
+      <div class="loading-bar-wrap">
+        <div class="loading-track">
+          <div id="loading-fill"></div>
+        </div>
+        <div id="loading-status">Initializing AI engine…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Home Screen ───────────────────────────────────────── -->
+  <div id="home-screen" class="screen">
+    <canvas id="home-canvas" class="bg-canvas"></canvas>
+    <div class="home-content">
+      <div class="game-logo">
+        <span class="logo-syn">SYN</span><span class="logo-apse">APSE</span>
+      </div>
+      <div class="game-subtitle">Bridge words through semantic space</div>
+      <div class="home-buttons">
+        <button id="btn-daily" class="btn-primary">⚡ Daily Challenge</button>
+        <button id="btn-random" class="btn-secondary">🎲 Random Puzzle</button>
+        <button id="btn-custom" class="btn-secondary">✏️ Custom Game</button>
+        <button id="btn-how-to" class="btn-ghost">How to Play</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Game Screen ───────────────────────────────────────── -->
+  <div id="game-screen" class="screen">
+
+    <!-- Header HUD -->
+    <div id="game-header">
+      <button id="btn-home" class="btn-icon" title="Home">←</button>
+      <div class="hud-item">
+        <span class="hud-label">Steps</span>
+        <span id="hud-step-count" class="hud-value">0</span>
+      </div>
+      <div class="hud-sep"></div>
+      <span id="puzzle-type-label" class="puzzle-label"></span>
+      <div class="hud-sep"></div>
+      <button id="btn-hint" class="btn-icon" title="Help">?</button>
+    </div>
+
+    <!-- Main content -->
+    <div id="game-content">
+
+      <!-- Left: path history -->
+      <div class="side-panel" id="path-panel">
+        <div class="panel-label">Your Path</div>
+        <div id="path-list"></div>
+      </div>
+
+      <!-- Center: canvas -->
+      <div id="canvas-container">
+        <canvas id="game-canvas"></canvas>
+      </div>
+
+
+    </div>
+
+    <!-- Input bar -->
+    <div id="input-bar">
+      <div class="current-badge">
+        <span class="current-badge-label">Now</span>
+        <span id="current-word-badge">—</span>
+      </div>
+      <div class="input-wrapper" id="input-wrapper">
+        <span class="checking-spinner" id="spinner"></span>
+        <input
+          type="text"
+          id="word-input"
+          placeholder="Type your next word…"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+          maxlength="30"
+        />
+        <button id="btn-submit" class="btn-submit" title="Submit">→</button>
+      </div>
+      <button id="btn-undo" class="btn-undo" title="Undo last step" disabled>↩ <span id="undo-count">3</span></button>
+      <button id="btn-give-up" class="btn-give-up">Give Up</button>
+    </div>
+  </div>
+
+  <!-- ─── Win Screen ────────────────────────────────────────── -->
+  <div id="win-screen" class="screen">
+    <div class="win-content">
+      <div class="win-title">Path Complete!</div>
+      <div class="win-steps">
+        <span class="step-count" id="ws-steps">0</span>
+        <span class="step-label">steps taken</span>
+      </div>
+      <div class="win-buttons">
+        <button id="btn-play-again" class="btn-primary">Play Again</button>
+        <button id="btn-home-win" class="btn-ghost">Home</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── In-Game Tutorial ─────────────────────────────────── -->
+  <div id="tut-stage">
+    <div id="tut-dim"></div>
+    <div id="tut-ring"></div>
+    <div id="tut-card">
+      <div id="tut-step-counter"></div>
+      <div id="tut-card-title"></div>
+      <div id="tut-card-body"></div>
+      <div class="tut-card-footer">
+        <button id="tut-skip-btn">Skip tutorial</button>
+        <button id="tut-ok-btn">Got it →</button>
+      </div>
+    </div>
+  </div>
+  <div id="tut-hint"></div>
+
+  <!-- ─── Custom Game Modal ────────────────────────────────── -->
+  <div id="custom-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-title">Custom Game</div>
+      <div class="modal-subtitle">Choose your own start and target words</div>
+      <div class="modal-field">
+        <label class="modal-label" for="custom-start">Start Word</label>
+        <input id="custom-start" class="modal-input" type="text" placeholder="e.g. fire"
+          autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" maxlength="30" />
+      </div>
+      <div class="modal-field">
+        <label class="modal-label" for="custom-target">Target Word</label>
+        <input id="custom-target" class="modal-input" type="text" placeholder="e.g. ocean"
+          autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" maxlength="30" />
+      </div>
+      <div id="custom-error" class="modal-error" style="display:none;"></div>
+      <div class="modal-buttons">
+        <button id="btn-custom-cancel" class="btn-ghost">Cancel</button>
+        <button id="btn-custom-play" class="btn-primary">Play →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Toast container ───────────────────────────────────── -->
+  <div id="toast-container"></div>
+
+
+  <!-- ─── Loading animation (no dependencies) ──────────────── -->
+  <script>
+  (function () {
+    const canvas = document.getElementById('loading-canvas');
+    const ctx = canvas.getContext('2d');
+    let W, H, pts, animId;
+
+    function resize() {
+      W = canvas.width  = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    }
+    function init() {
+      resize();
+      pts = Array.from({ length: 50 }, () => ({
+        x: Math.random() * W, y: Math.random() * H,
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: (Math.random() - 0.5) * 0.5,
+        r: Math.random() * 2 + 0.5,
+      }));
+    }
+    function tick() {
+      ctx.clearRect(0, 0, W, H);
+      pts.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+        if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,245,212,0.35)';
+        ctx.fill();
+      });
+      ctx.strokeStyle = 'rgba(0,245,212,0.06)';
+      ctx.lineWidth = 0.8;
+      for (let i = 0; i < pts.length; i++) {
+        for (let j = i + 1; j < pts.length; j++) {
+          const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y;
+          const d = Math.sqrt(dx*dx + dy*dy);
+          if (d < 140) {
+            ctx.globalAlpha = (1 - d / 140) * 0.5;
+            ctx.beginPath();
+            ctx.moveTo(pts[i].x, pts[i].y);
+            ctx.lineTo(pts[j].x, pts[j].y);
+            ctx.stroke();
+          }
+        }
+      }
+      ctx.globalAlpha = 1;
+      animId = requestAnimationFrame(tick);
+    }
+    window.stopLoadingAnim = function () { cancelAnimationFrame(animId); };
+    window.addEventListener('resize', resize);
+    init();
+    tick();
+  })();
+  </script>
+
+  <!-- ─── CDN Scripts ───────────────────────────────────────── -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/universal-sentence-encoder@1.3.3/dist/universal-sentence-encoder.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+
+  <!-- ─── Game Script ───────────────────────────────────────── -->
+  <script>
+  'use strict';
+
+  /* ═══════════════════════════════════════════════════════════
+     CONFIG
+  ═══════════════════════════════════════════════════════════ */
+  const CFG = {
+    WIN_THRESHOLD:  0.50,   // sim to target ≥ this → win (same bar as any valid step)
+    MIN_SIM:        0.50,   // minimum sim to current word to advance
+  };
+
+  /* ═══════════════════════════════════════════════════════════
+     PUZZLES
+  ═══════════════════════════════════════════════════════════ */
+  // Puzzle pairs are chosen so that sim(start, target) < 0.50 under USE —
+  // i.e. a player cannot win in zero steps by typing the target directly,
+  // and there is no single obvious bridge word that most players would reach first.
+  //
+  // Pairs audited and replaced if they fell in any of these risk categories:
+  //   • Same semantic category (seasons, times-of-day, speech acts, antonym pairs)
+  //   • Classic literary/cultural co-occurrence ("make love not war", "tears of laughter")
+  //   • Landscape pairs that appear together constantly in descriptions
+  //
+  // Replaced (10):  star/earth, spring/autumn, laughter/tears, whisper/shout,
+  //                 dawn/midnight, gentle/fierce, love/war, dream/reality,
+  //                 silence/thunder, cloud/mountain
+  //
+  // Kept (10):      fire/ocean, king/computer, music/mathematics, baby/ancient,
+  //                 honey/steel, garden/factory, feather/anchor, forest/city,
+  //                 ice/desert, child/wisdom
+  //
+  // ── Borderline kept pairs (monitor & swap if players find them trivial) ──
+  //   music→mathematics  (abstract disciplines with famous connection)
+  //   forest→city        (nature/urban contrast, commonly paired)
+  //   ice→desert         (extreme environments, may co-occur in climate contexts)
+  //   child→wisdom       ("wisdom of a child" is a common phrase)
+  //   feather→anchor     (light/heavy symbolism, may appear together in metaphors)
+
+  const PUZZLES = [
+    // ── Safe pairs (verified distant) ─────────────────────────────────────
+    { start: 'software', target: 'piano', par: 3 },
+    { start: 'king', target: 'computer', par: 5 },
+    { start: 'music', target: 'mathematics', par: 5 },
+    { start: 'baby', target: 'ancient', par: 5 },
+    { start: 'honey', target: 'steel', par: 5 },
+    { start: 'garden', target: 'factory', par: 4 },
+    { start: 'feather', target: 'anchor', par: 4 },
+    { start: 'forest', target: 'city', par: 4 },
+    { start: 'ice', target: 'desert', par: 4 },
+    { start: 'child', target: 'wisdom', par: 4 },
+    // ── Replacements (cross-domain pairs, clearly non-trivial) ────────────
+    // warm/fragile/intimate  →  cold/massive/geological
+    { start: 'lantern', target: 'glacier', par: 4 },
+    // soft/comfort/rest      →  hot/violent/explosive
+    { start: 'pillow', target: 'volcano', par: 4 },
+    // darkness/intangible    →  brass/musical/loud
+    { start: 'shadow', target: 'trumpet', par: 5 },
+    // small/fragile/warm     →  massive/cold/destructive
+    { start: 'candle', target: 'avalanche', par: 4 },
+    // order/knowledge/quiet  →  chaos/geological/violent
+    { start: 'library', target: 'earthquake', par: 5 },
+    // sweet/food ingredient  →  dense metal/industrial
+    { start: 'sugar', target: 'iron', par: 5 },
+    // sustenance/domestic    →  electrical/atmospheric
+    { start: 'bread', target: 'lightning', par: 5 },
+    // mechanical/artificial  →  wild/tropical/natural
+    { start: 'clock', target: 'jungle', par: 4 },
+    // delicate/smooth/luxury →  heavy/blunt/forceful
+    { start: 'silk', target: 'hammer', par: 4 },
+    // tiny/precise/nearby    →  infinite/distant/boundary
+    { start: 'needle', target: 'horizon', par: 5 },
+  ];
+
+  /* ═══════════════════════════════════════════════════════════
+     PUZZLE MANAGER
+  ═══════════════════════════════════════════════════════════ */
+  class PuzzleManager {
+    constructor() { this._generated = []; }
+
+    _pool() { return [...PUZZLES, ...this._generated]; }
+
+    addGeneratedLevels(levels) { this._generated = levels; }
+
+    getDailyPuzzle() {
+      const pool = this._pool();
+      const key = new Date().toDateString();
+      let h = 0;
+      for (let i = 0; i < key.length; i++) { h = Math.imul(31, h) + key.charCodeAt(i) | 0; }
+      return pool[Math.abs(h) % pool.length];
+    }
+    getRandomPuzzle(exclude) {
+      const pool = this._pool().filter(p => p !== exclude);
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     WORD POOL  (vocabulary for procedural level generation)
+  ═══════════════════════════════════════════════════════════ */
+  const WORD_POOL = {
+    nature:       ['river', 'stone', 'leaf', 'tide', 'cliff', 'soil', 'branch', 'pebble', 'frost', 'dune', 'marsh', 'peak', 'cave', 'fog', 'ash'],
+    animals:      ['wolf', 'eagle', 'dolphin', 'spider', 'elephant', 'tiger', 'falcon', 'whale', 'beetle', 'serpent', 'crow', 'moth', 'lynx', 'crab', 'bison'],
+    technology:   ['circuit', 'robot', 'satellite', 'radar', 'engine', 'cable', 'signal', 'server', 'battery', 'laser', 'drone', 'turbine', 'chip', 'scanner', 'antenna'],
+    food:         ['salt', 'pepper', 'flour', 'butter', 'cream', 'olive', 'vinegar', 'yeast', 'syrup', 'mustard', 'barley', 'cinnamon', 'garlic', 'ginger', 'broth'],
+    emotions:     ['rage', 'grief', 'envy', 'pride', 'shame', 'dread', 'wonder', 'bliss', 'spite', 'guilt', 'awe', 'hope', 'scorn', 'longing', 'pity'],
+    medieval:     ['sword', 'castle', 'knight', 'moat', 'tower', 'shield', 'banner', 'dungeon', 'throne', 'archer', 'herald', 'siege', 'lance', 'forge', 'helm'],
+    astronomy:    ['comet', 'nebula', 'quasar', 'pulsar', 'crater', 'orbit', 'corona', 'eclipse', 'meteor', 'zenith', 'aurora', 'transit', 'debris', 'sunspot', 'apogee'],
+    body:         ['spine', 'lung', 'skull', 'nerve', 'vein', 'jaw', 'elbow', 'thumb', 'iris', 'marrow', 'tendon', 'temple', 'nostril', 'knuckle', 'femur'],
+    abstract:     ['chaos', 'silence', 'decay', 'truth', 'cycle', 'entropy', 'balance', 'paradox', 'origin', 'memory', 'pattern', 'fate', 'boundary', 'essence', 'void'],
+    maritime:     ['anchor', 'cargo', 'reef', 'hull', 'buoy', 'net', 'port', 'stern', 'mast', 'harbor', 'oar', 'compass', 'depth', 'keel', 'rigging'],
+    architecture: ['arch', 'vault', 'spire', 'dome', 'column', 'ruin', 'wall', 'threshold', 'corridor', 'facade', 'beam', 'mortar', 'keystone', 'scaffold', 'turret'],
+    music:        ['chord', 'tempo', 'bass', 'rhythm', 'pitch', 'tone', 'scale', 'echo', 'strum', 'beat', 'melody', 'harmony', 'pulse', 'refrain', 'crescendo'],
+    weather:      ['storm', 'drought', 'hail', 'blizzard', 'thunder', 'gale', 'sleet', 'mist', 'squall', 'humidity', 'pressure', 'dew', 'tempest', 'cyclone', 'lightning'],
+    tools:        ['hammer', 'chisel', 'lathe', 'anvil', 'pliers', 'auger', 'bellows', 'clamp', 'drill', 'vice', 'pulley', 'wedge', 'axle', 'lever', 'cog'],
+    chemistry:    ['acid', 'alkali', 'crystal', 'catalyst', 'vapor', 'plasma', 'oxide', 'solvent', 'polymer', 'alloy', 'compound', 'element', 'bond', 'chain', 'ion'],
+    agriculture:  ['plow', 'silo', 'harvest', 'seed', 'furrow', 'grain', 'straw', 'tractor', 'crop', 'irrigation', 'orchard', 'pasture', 'barn', 'fallow', 'thresher'],
+    geology:      ['granite', 'basalt', 'obsidian', 'sediment', 'fault', 'stratum', 'magma', 'fossil', 'aquifer', 'ridge', 'canyon', 'delta', 'terrace', 'sinkhole', 'bedrock'],
+    myth:         ['dragon', 'phoenix', 'oracle', 'titan', 'labyrinth', 'rune', 'curse', 'prophecy', 'sacrifice', 'altar', 'deity', 'underworld', 'ritual', 'omen', 'relic'],
+    sport:        ['sprint', 'hurdle', 'tackle', 'pivot', 'lunge', 'feint', 'parry', 'serve', 'smash', 'volley', 'rally', 'baton', 'podium', 'roster', 'draft'],
+    colors:       ['crimson', 'ivory', 'cobalt', 'amber', 'indigo', 'scarlet', 'ochre', 'jade', 'maroon', 'teal', 'sienna', 'saffron', 'charcoal', 'vermilion', 'cerulean'],
+  };
+
+  /* ═══════════════════════════════════════════════════════════
+     LEVEL GENERATOR  (runtime procedural generation via USE)
+  ═══════════════════════════════════════════════════════════ */
+  class LevelGenerator {
+
+    // ── IndexedDB helpers ──────────────────────────────────
+    static _idb(mode, fn) {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open('synapse-db', 1);
+        req.onupgradeneeded = () => req.result.createObjectStore('levels');
+        req.onsuccess = () => {
+          try {
+            const tx = req.result.transaction('levels', mode);
+            fn(tx.objectStore('levels'), resolve, reject);
+          } catch (e) { reject(e); }
+        };
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    static _loadCache() {
+      return LevelGenerator._idb('readonly', (store, resolve) => {
+        const r = store.get('pool-v1');
+        r.onsuccess = () => resolve(r.result || null);
+        r.onerror   = () => resolve(null);
+      }).catch(() => null);
+    }
+
+    static _saveCache(levels) {
+      return LevelGenerator._idb('readwrite', (store, resolve, reject) => {
+        const r = store.put(levels, 'pool-v1');
+        r.onsuccess = () => resolve();
+        r.onerror   = () => reject(r.error);
+      }).catch(() => {});
+    }
+
+    // ── Main entry point — call after embedder.load() ──────
+    static async runInBackground(embedder, puzzleMgr) {
+      try {
+        // Fast path: return cached pool if it exists
+        const cached = await LevelGenerator._loadCache();
+        if (cached && cached.length) {
+          puzzleMgr.addGeneratedLevels(cached);
+          console.log(`[SYNAPSE] Loaded ${cached.length} generated levels from cache`);
+          return;
+        }
+
+        // Gather all unique words across all categories
+        const allWords = [...new Set(Object.values(WORD_POOL).flat())];
+
+        // Batch-embed every word in a single model call (much faster than one-by-one)
+        const tensor = await embedder.model.embed(allWords);
+        const raw    = await tensor.data();
+        tensor.dispose();
+
+        const vecs = new Map();
+        allWords.forEach((w, i) => vecs.set(w, raw.slice(i * 512, (i + 1) * 512)));
+
+        // Generate candidate pairs: for each pair of categories, pick 5 staggered word pairs
+        const cats       = Object.entries(WORD_POOL);
+        const candidates = [];
+        for (let a = 0; a < cats.length; a++) {
+          for (let b = a + 1; b < cats.length; b++) {
+            const wa = cats[a][1], wb = cats[b][1];
+            for (let k = 0; k < 5; k++) {
+              candidates.push([wa[k], wb[(k * 3 + 1) % wb.length]]);
+            }
+          }
+        }
+
+        // Filter to valid pairs and assign par from actual similarity
+        const valid = [];
+        for (const [start, target] of candidates) {
+          if (!vecs.has(start) || !vecs.has(target)) continue;
+          const sim = embedder.dot(vecs.get(start), vecs.get(target));
+          if (sim < 0.50 && sim > 0.05) {
+            const par = sim > 0.42 ? 3 : sim > 0.33 ? 4 : sim > 0.22 ? 5 : 6;
+            valid.push({ start, target, par });
+          }
+        }
+
+        await LevelGenerator._saveCache(valid);
+        puzzleMgr.addGeneratedLevels(valid);
+        console.log(`[SYNAPSE] Generated ${valid.length} levels from ${candidates.length} candidates`);
+      } catch (err) {
+        console.warn('[SYNAPSE] Level generation failed:', err);
+      }
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     WORD EMBEDDER  (TF.js Universal Sentence Encoder)
+  ═══════════════════════════════════════════════════════════ */
+  class WordEmbedder {
+    constructor() {
+      this.model = null;
+      this.cache = new Map();
+      this.words = null;  // Set<string> loaded from words.txt
+    }
+
+    async load(onProgress) {
+      onProgress(0.05, 'Initializing AI engine…');
+
+      // ── Word list (local) ────────────────────────────────────────────
+      try {
+        const res = await fetch('./words.txt');
+        if (res.ok) {
+          const text = await res.text();
+          this.words = new Set(text.split('\n').map(w => w.trim()).filter(Boolean));
+        }
+      } catch { /* file not available — validation disabled */ }
+
+      // ── Cache API interception ────────────────────────────────────────
+      // TF.js fetches model weights (~25 MB) from tfhub.dev / googleapis.com.
+      // We intercept those fetch calls and store responses in the browser's
+      // Cache API so subsequent loads are served locally without any network
+      // traffic. Gracefully degrades on file:// (where caches is unavailable).
+      const CACHE_NAME = 'synapse-tf-v1';
+      const MODEL_URL  = /tfhub\.dev|tensorflow\.org|googleapis\.com/;
+      const origFetch  = window.fetch;
+      let   cacheReady = false;
+      let   fromCache  = false;
+
+      try {
+        const store = await caches.open(CACHE_NAME);
+        const keys  = await store.keys();
+        fromCache   = keys.length > 0;
+        cacheReady  = true;
+
+        window.fetch = async (input, init) => {
+          const url = typeof input === 'string' ? input : (input?.url ?? '');
+          if (!MODEL_URL.test(url)) return origFetch(input, init);
+          try {
+            const c   = await caches.open(CACHE_NAME);
+            const hit = await c.match(url);
+            if (hit) return hit.clone();
+            const res = await origFetch(input, init);
+            if (res?.ok) await c.put(url, res.clone());
+            return res;
+          } catch {
+            return origFetch(input, init);
+          }
+        };
+      } catch (_) {
+        // caches API unavailable (file:// protocol) — proceed without caching
+      }
+
+      const statusMsg = fromCache ? 'Loading from local cache…' : 'Downloading AI model (one-time setup)…';
+      const tickStep  = fromCache ? 0.06 : 0.012;
+      const tickMs    = fromCache ? 60   : 250;
+      let fakeP = 0.08;
+      const iv = setInterval(() => {
+        fakeP = Math.min(fakeP + tickStep, 0.88);
+        onProgress(fakeP, statusMsg);
+      }, tickMs);
+
+      try {
+        // Try multiple possible global names for the USE CDN bundle
+        const useLib = window.use
+          || window.universalSentenceEncoder
+          || window['universal-sentence-encoder'];
+        if (!useLib) throw new Error('Universal Sentence Encoder not found on window. Check CDN script loading.');
+        this.model = await useLib.load();
+        clearInterval(iv);
+        onProgress(1.0, 'AI engine ready!');
+      } catch (e) {
+        clearInterval(iv);
+        throw e;
+      } finally {
+        if (cacheReady) window.fetch = origFetch;
+      }
+    }
+
+    isEnglishWord(word) {
+      if (!this.words) return true;  // fallback: allow if list not loaded
+      return this.words.has(word.toLowerCase().trim());
+    }
+
+    async getEmbedding(word) {
+      const key = word.toLowerCase().trim();
+      if (this.cache.has(key)) return this.cache.get(key);
+      const tensor = await this.model.embed([key]);
+      const raw    = await tensor.data();
+      tensor.dispose();
+      // raw is Float32Array of length 512 (one word → 512 dims)
+      const vec = raw.slice(0, 512);
+      this.cache.set(key, vec);
+      return vec;
+    }
+
+    dot(a, b) {
+      let s = 0;
+      for (let i = 0; i < a.length; i++) s += a[i] * b[i];
+      return s;
+    }
+
+    async getSimilarity(wA, wB) {
+      if (wA.toLowerCase() === wB.toLowerCase()) return 1;
+      const [a, b] = await Promise.all([this.getEmbedding(wA), this.getEmbedding(wB)]);
+      return Math.max(0, Math.min(1, this.dot(a, b)));
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     GAME STATE
+  ═══════════════════════════════════════════════════════════ */
+  class GameState {
+    constructor() { this._reset(); }
+
+    _reset() {
+      this.puzzle      = null;
+      this.currentWord = '';
+      this.path        = [];       // [word, ...]
+      this.stepSims    = [];       // similarity of each step (to previous word)
+      this.targetSims  = [];       // similarity of each word to target
+      this.steps       = 0;
+      this.undosLeft   = 3;
+      this.status      = 'idle';   // idle | playing | won | gave_up
+    }
+
+    init(puzzle) {
+      this._reset();
+      this.puzzle      = puzzle;
+      this.currentWord = puzzle.start;
+      this.path        = [puzzle.start];
+      this.status      = 'playing';
+    }
+
+    addStep(word, stepSim, targetSim) {
+      this.path.push(word);
+      this.stepSims.push(stepSim);
+      this.targetSims.push(targetSim);
+      this.currentWord = word;
+      this.steps++;
+    }
+
+    isWon(word, simToTarget) {
+      return word.toLowerCase() === this.puzzle.target.toLowerCase()
+          || simToTarget >= CFG.WIN_THRESHOLD;
+    }
+
+    canUndo() { return this.undosLeft > 0 && this.path.length > 1; }
+
+    undo() {
+      if (!this.canUndo()) return null;
+      const removed = this.path.pop();
+      this.stepSims.pop();
+      this.targetSims.pop();
+      this.steps--;
+      this.currentWord = this.path[this.path.length - 1];
+      this.undosLeft--;
+      return removed;
+    }
+
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     CANVAS RENDERER  — Semantic Axis Layout
+     X position of every node reflects its cosine similarity to
+     the target word.  Far left = 0 %, far right = 100 % (target).
+     Threshold lines and WIN ZONE shading give constant context.
+     Node colour shifts cool→warm→gold as words approach the target.
+  ═══════════════════════════════════════════════════════════ */
+  class CanvasRenderer {
+    constructor() {
+      this.canvas     = null;
+      this.ctx        = null;
+      this.nodes      = [];   // { word, type, simToTarget, stepIdx, x,y,tx,ty,scale,alpha }
+      this.parts      = [];   // background drift particles
+      this.celebParts = [];
+      this.time       = 0;
+      this.raf        = null;
+      this.W = this.H = 0;
+      this._resizeHandler = null;
+      this.startSim = null;
+    }
+
+    /* ── public geometry helpers ─────────────────────── */
+    _lm()    { return 58; }               // left  margin
+    _rm()    { return 58; }               // right margin
+    _isLandscape() { return this.W > this.H; }
+    _simToX(sim) {
+      const usable = this.W - this._lm() - this._rm();
+      const win = CFG.WIN_THRESHOLD;
+      // Left bound: slightly below start word's similarity (or 0 if unknown)
+      const left = this.startSim !== null ? Math.max(0, this.startSim - 0.05) : 0;
+      // [left, win] → [0%, 85%] of usable width; [win, 1] → [85%, 100%]
+      const t = sim <= win
+        ? Math.max(0, (sim - left) / (win - left)) * 0.85
+        : 0.85 + ((sim - win) / (1 - win)) * 0.15;
+      return this._lm() + t * usable;
+    }
+    _simToY(sim) {
+      const tm = this._lm();
+      const usable = this.H - tm - this._rm();
+      const win  = CFG.WIN_THRESHOLD;
+      const top  = this.startSim !== null ? Math.max(0, this.startSim - 0.05) : 0;
+      const t    = sim <= win
+        ? Math.max(0, (sim - top) / (win - top)) * 0.85
+        : 0.85 + ((sim - win) / (1 - win)) * 0.15;
+      return tm + t * usable;
+    }
+    _simToColor(sim) {
+      // cool blue (far) → warm orange → gold (win zone)
+      const t = Math.max(0, Math.min(1, (sim - 0.45) / (0.88 - 0.45)));
+      const h = Math.round(220 - t * 185); // 220 (blue) → 35 (gold)
+      const s = Math.round(75 + t * 20);
+      const l = Math.round(58 + t * 10);
+      return `hsl(${h},${s}%,${l}%)`;
+    }
+
+    init(canvas) {
+      if (this._resizeHandler) window.removeEventListener('resize', this._resizeHandler);
+      this.canvas = canvas;
+      this.ctx    = canvas.getContext('2d');
+      this._resize();
+      this._initParts();
+      this._loop();
+      this._resizeHandler = () => { this._resize(); this._reposition(); };
+      window.addEventListener('resize', this._resizeHandler);
+    }
+
+    _resize() {
+      const el = this.canvas.parentElement;
+      this.W   = el.clientWidth;
+      this.H   = el.clientHeight;
+      const dpr = window.devicePixelRatio || 1;
+      this.canvas.width  = this.W * dpr;
+      this.canvas.height = this.H * dpr;
+      this.canvas.style.width  = this.W + 'px';
+      this.canvas.style.height = this.H + 'px';
+      this.ctx.scale(dpr, dpr);
+    }
+
+    _initParts() {
+      this.parts = Array.from({ length: 28 }, () => ({
+        x: Math.random() * this.W, y: Math.random() * this.H,
+        vx: (Math.random() - 0.5) * 0.25, vy: (Math.random() - 0.5) * 0.25,
+        r: Math.random() * 1.4 + 0.3,
+      }));
+    }
+
+    reset() { this.nodes = []; this.celebParts = []; this.startSim = null; }
+
+    // simToTarget: cosine similarity [0,1] of this word to the target.
+    // This determines the node's horizontal position on the semantic axis.
+    addNode(word, type, simToTarget = 1) {
+      const stepIdx = this.nodes.filter(n => n.type !== 'target' && n.type !== 'linked').length;
+      if (type !== 'target' && this.startSim === null) this.startSim = simToTarget;
+      const node = { word, type, simToTarget, stepIdx, x: 0, y: 0, tx: 0, ty: 0, scale: 0, alpha: 0 };
+      this.nodes.push(node);
+      this._reposition();
+      node.x = node.tx;
+      node.y = node.ty;
+      return node;
+    }
+
+    setNodeType(word, type) {
+      const n = this.nodes.find(n => n.word === word);
+      if (n) n.type = type;
+    }
+
+    _reposition() {
+      const { nodes, W, H } = this;
+      const minSep = 54;   // minimum pixel distance between node centres
+
+      // Interior-point segment intersection test (shared by both orientations)
+      function segsIntersect(ax, ay, bx, by, cx, cy_, dx, dy) {
+        const d1x = bx-ax, d1y = by-ay, d2x = dx-cx, d2y = dy-cy_;
+        const den = d1x*d2y - d1y*d2x;
+        if (Math.abs(den) < 0.001) return false;
+        const t = ((cx-ax)*d2y - (cy_-ay)*d2x) / den;
+        const u = ((cx-ax)*d1y - (cy_-ay)*d1x) / den;
+        return t > 0.01 && t < 0.99 && u > 0.01 && u < 0.99;
+      }
+
+      if (!this._isLandscape()) {
+        // ── PORTRAIT: similarity → Y (top=far, bottom=target) ──
+        const cx     = W / 2;
+        const margin = 44;   // min distance from left/right edge
+
+        // 1. Assign Y to every node by similarity
+        nodes.forEach(n => {
+          n.ty = (n.type === 'target' || n.type === 'linked')
+            ? this._simToY(1.0)
+            : this._simToY(n.simToTarget);
+        });
+
+        // Target always at horizontal centre
+        const tgt = nodes.find(n => n.type === 'target' || n.type === 'linked');
+        if (tgt) tgt.tx = cx;
+
+        // 2. Path nodes in step order
+        const path = nodes
+          .filter(n => n.type !== 'target' && n.type !== 'linked')
+          .sort((a, b) => a.stepIdx - b.stepIdx);
+
+        if (path.length === 0) return;
+
+        // 3. Greedy X placement — minimise crossings
+        path[0].tx = cx;
+        const edges = [];
+        const CANDS = 32;
+
+        for (let i = 1; i < path.length; i++) {
+          const prev = path[i - 1];
+          const cur  = path[i];
+          let best = cx, bestScore = Infinity;
+
+          for (let s = 0; s <= CANDS; s++) {
+            const x = margin + (s / CANDS) * (W - 2 * margin);
+            let score = 0;
+
+            for (const e of edges) {
+              if (segsIntersect(prev.tx, prev.ty, x, cur.ty, e.x1, e.y1, e.x2, e.y2))
+                score += 10000;
+            }
+
+            // Only penalise X-distance — nodes at different Y shouldn't force X spread
+            for (const n of path) {
+              if (n === cur || n.tx === undefined) continue;
+              const dx = Math.abs(x - n.tx);
+              if (dx < minSep) score += (minSep - dx) * 3;
+            }
+
+            score += (Math.abs(x - cx) / cx) * 18;
+
+            if (score < bestScore) { bestScore = score; best = x; }
+          }
+
+          cur.tx = best;
+          edges.push({ x1: prev.tx, y1: prev.ty, x2: cur.tx, y2: cur.ty });
+        }
+
+        // 4. Light repulsion pass — X-axis only
+        for (let iter = 0; iter < 25; iter++) {
+          for (let i = 0; i < path.length; i++) {
+            for (let j = i + 1; j < path.length; j++) {
+              const a = path[i], b = path[j];
+              const dx = a.tx - b.tx;
+              const adX = Math.abs(dx);
+              if (adX < minSep) {
+                const push = (minSep - adX) * 0.5;
+                const dir  = dx >= 0 ? 1 : -1;
+                a.tx += dir * push;
+                b.tx -= dir * push;
+              }
+            }
+          }
+          path.forEach(n => { n.tx = Math.max(margin, Math.min(W - margin, n.tx)); });
+        }
+
+      } else {
+        // ── LANDSCAPE: similarity → X (left=far, right=target) ──
+        const cy     = H / 2;
+        const margin = 44;   // min distance from top/bottom edge
+
+        // 1. Assign X to every node
+        nodes.forEach(n => {
+          n.tx = (n.type === 'target' || n.type === 'linked')
+            ? this._simToX(1.0)
+            : this._simToX(n.simToTarget);
+        });
+
+        // Target always at vertical centre
+        const tgt = nodes.find(n => n.type === 'target' || n.type === 'linked');
+        if (tgt) tgt.ty = cy;
+
+        // 2. Path nodes in step order
+        const path = nodes
+          .filter(n => n.type !== 'target' && n.type !== 'linked')
+          .sort((a, b) => a.stepIdx - b.stepIdx);
+
+        if (path.length === 0) return;
+
+        // 3. Greedy Y placement — minimise crossings
+        path[0].ty = cy;
+        const edges = [];
+        const CANDS = 32;
+
+        for (let i = 1; i < path.length; i++) {
+          const prev = path[i - 1];
+          const cur  = path[i];
+          let best = cy, bestScore = Infinity;
+
+          for (let s = 0; s <= CANDS; s++) {
+            const y = margin + (s / CANDS) * (H - 2 * margin);
+            let score = 0;
+
+            for (const e of edges) {
+              if (segsIntersect(prev.tx, prev.ty, cur.tx, y, e.x1, e.y1, e.x2, e.y2))
+                score += 10000;
+            }
+
+            // Only penalise Y-distance — nodes at different X shouldn't force Y spread
+            for (const n of path) {
+              if (n === cur || n.ty === undefined) continue;
+              const dy = Math.abs(y - n.ty);
+              if (dy < minSep) score += (minSep - dy) * 3;
+            }
+
+            score += (Math.abs(y - cy) / cy) * 18;
+
+            if (score < bestScore) { bestScore = score; best = y; }
+          }
+
+          cur.ty = best;
+          edges.push({ x1: prev.tx, y1: prev.ty, x2: cur.tx, y2: cur.ty });
+        }
+
+        // 4. Light repulsion pass — Y-axis only
+        for (let iter = 0; iter < 25; iter++) {
+          for (let i = 0; i < path.length; i++) {
+            for (let j = i + 1; j < path.length; j++) {
+              const a = path[i], b = path[j];
+              const dy = a.ty - b.ty;
+              const adY = Math.abs(dy);
+              if (adY < minSep) {
+                const push = (minSep - adY) * 0.5;
+                const dir  = dy >= 0 ? 1 : -1;
+                a.ty += dir * push;
+                b.ty -= dir * push;
+              }
+            }
+          }
+          path.forEach(n => { n.ty = Math.max(margin, Math.min(H - margin, n.ty)); });
+        }
+      }
+    }
+
+    _loop() {
+      const tick = () => {
+        this._update();
+        this._draw();
+        this.raf = requestAnimationFrame(tick);
+      };
+      this.raf = requestAnimationFrame(tick);
+    }
+
+    stop() {
+      cancelAnimationFrame(this.raf);
+      if (this._resizeHandler) {
+        window.removeEventListener('resize', this._resizeHandler);
+        this._resizeHandler = null;
+      }
+    }
+
+    _update() {
+      this.time += 0.016;
+      const { parts, nodes, celebParts } = this;
+
+      // Background particles
+      parts.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0) p.x = this.W; else if (p.x > this.W) p.x = 0;
+        if (p.y < 0) p.y = this.H; else if (p.y > this.H) p.y = 0;
+      });
+
+      // Animate nodes in
+      nodes.forEach(n => {
+        n.scale = Math.min(1, n.scale + 0.06);
+        n.alpha = Math.min(1, n.alpha + 0.05);
+        n.x += (n.tx - n.x) * 0.1;
+        n.y += (n.ty - n.y) * 0.1;
+      });
+
+      // Celebration particles
+      for (let i = celebParts.length - 1; i >= 0; i--) {
+        const p = celebParts[i];
+        p.x += p.vx; p.y += p.vy;
+        p.vy += 0.08;  // gravity
+        p.life--;
+        p.alpha = p.life / p.maxLife;
+        if (p.life <= 0) celebParts.splice(i, 1);
+      }
+    }
+
+    _draw() {
+      const { ctx, W, H } = this;
+      ctx.clearRect(0, 0, W, H);
+      this._drawBg();
+      this._drawEdges();
+      this.nodes.forEach(n => this._drawNode(n));
+      this._drawCelebParts();
+    }
+
+    _drawBg() {
+      const { ctx, W, H, parts } = this;
+
+      if (!this._isLandscape()) {
+        // ── PORTRAIT: gradient top → bottom ───────────────────
+        const grad = ctx.createLinearGradient(0, 0, 0, H);
+        grad.addColorStop(0,    'rgba(20,20,60,0.18)');
+        grad.addColorStop(0.5,  'rgba(30,15,40,0.08)');
+        grad.addColorStop(CFG.WIN_THRESHOLD, 'rgba(60,30,15,0.08)');
+        grad.addColorStop(1,    'rgba(80,45,10,0.20)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+
+        // WIN ZONE highlight (below win threshold)
+        const winY  = this._simToY(CFG.WIN_THRESHOLD);
+        const winGr = ctx.createLinearGradient(0, winY, 0, H);
+        winGr.addColorStop(0, 'rgba(255,209,102,0.04)');
+        winGr.addColorStop(1, 'rgba(255,209,102,0.12)');
+        ctx.fillStyle = winGr;
+        ctx.fillRect(0, winY, W, H - winY);
+
+        // ── Axis labels ───────────────────────────────────────
+        ctx.save();
+        ctx.font      = '400 10px Outfit, sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.18)';
+        ctx.textAlign = 'left';
+        ctx.fillText('▲  far from target', this._lm(), 18);
+        ctx.fillText('close to target  ▼', this._lm(), H - 8);
+        ctx.restore();
+
+        // ── Threshold reference lines (horizontal) ────────────
+        const lines = [
+          { sim: CFG.WIN_THRESHOLD, label: `${Math.round(CFG.WIN_THRESHOLD * 100)}%  WIN`, gold: true  },
+          { sim: 0.65, label: '65 %', gold: false },
+          { sim: 0.80, label: '80 %', gold: false },
+        ];
+        lines.forEach(({ sim, label, gold }) => {
+          const y = this._simToY(sim);
+          ctx.save();
+          ctx.strokeStyle = gold ? 'rgba(255,209,102,0.30)' : 'rgba(255,255,255,0.09)';
+          ctx.lineWidth   = 1;
+          ctx.setLineDash([3, 7]);
+          ctx.beginPath(); ctx.moveTo(this._lm() + 4, y); ctx.lineTo(W - this._rm() - 4, y); ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = gold ? 'rgba(255,209,102,0.55)' : 'rgba(255,255,255,0.22)';
+          ctx.font      = `${gold ? '600' : '400'} 10px Outfit, sans-serif`;
+          ctx.textAlign = 'right';
+          ctx.fillText(label, W - this._rm() - 6, y - 4);
+          ctx.restore();
+        });
+
+      } else {
+        // ── LANDSCAPE: gradient left → right ──────────────────
+        const grad = ctx.createLinearGradient(0, 0, W, 0);
+        grad.addColorStop(0,    'rgba(20,20,60,0.18)');
+        grad.addColorStop(0.5,  'rgba(30,15,40,0.08)');
+        grad.addColorStop(CFG.WIN_THRESHOLD, 'rgba(60,30,15,0.08)');
+        grad.addColorStop(1,    'rgba(80,45,10,0.20)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+
+        // WIN ZONE highlight (right of win threshold)
+        const winX  = this._simToX(CFG.WIN_THRESHOLD);
+        const winGr = ctx.createLinearGradient(winX, 0, W, 0);
+        winGr.addColorStop(0, 'rgba(255,209,102,0.04)');
+        winGr.addColorStop(1, 'rgba(255,209,102,0.12)');
+        ctx.fillStyle = winGr;
+        ctx.fillRect(winX, 0, W - winX, H);
+
+        // ── Axis labels ───────────────────────────────────────
+        ctx.save();
+        ctx.font      = '400 10px Outfit, sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.18)';
+        ctx.textAlign = 'left';
+        ctx.fillText('◀  far from target', this._lm(), H - 10);
+        ctx.textAlign = 'right';
+        ctx.fillText('close to target  ▶', W - this._rm(), H - 10);
+        ctx.restore();
+
+        // ── Threshold reference lines (vertical) ─────────────
+        const lines = [
+          { sim: CFG.WIN_THRESHOLD, label: `${Math.round(CFG.WIN_THRESHOLD * 100)}%  WIN ›`, gold: true  },
+          { sim: 0.65, label: '65 %', gold: false },
+          { sim: 0.80, label: '80 %', gold: false },
+        ];
+        lines.forEach(({ sim, label, gold }) => {
+          const x = this._simToX(sim);
+          ctx.save();
+          ctx.strokeStyle = gold ? 'rgba(255,209,102,0.30)' : 'rgba(255,255,255,0.09)';
+          ctx.lineWidth   = 1;
+          ctx.setLineDash([3, 7]);
+          ctx.beginPath(); ctx.moveTo(x, 28); ctx.lineTo(x, H - 22); ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = gold ? 'rgba(255,209,102,0.55)' : 'rgba(255,255,255,0.22)';
+          ctx.font      = `${gold ? '600' : '400'} 10px Outfit, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.fillText(label, x, 20);
+          ctx.restore();
+        });
+      }
+
+      // ── Drift particles (both orientations) ──────────────────
+      parts.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(90,110,200,0.18)';
+        ctx.fill();
+      });
+    }
+
+    _drawEdges() {
+      const { ctx, nodes } = this;
+      const pathNodes = nodes.filter(n => n.type !== 'target' && n.type !== 'linked');
+
+      // ── Path edges — colour encodes direction (closer = green, farther = red) ──
+      for (let i = 0; i < pathNodes.length - 1; i++) {
+        const a = pathNodes[i], b = pathNodes[i + 1];
+        const alp   = Math.min(a.alpha, b.alpha);
+        const closer = b.simToTarget >= a.simToTarget;
+        const col   = closer ? '#34d399' : '#f87171';
+
+        ctx.save();
+        // Glow
+        ctx.globalAlpha = alp * 0.14;
+        ctx.strokeStyle = col;
+        ctx.lineWidth   = 9;
+        ctx.shadowColor = col; ctx.shadowBlur = 14;
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+        // Core
+        ctx.globalAlpha = alp * 0.70;
+        ctx.lineWidth   = 1.8;
+        ctx.shadowBlur  = 0;
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+        ctx.restore();
+      }
+
+      // ── Link to target on win ─────────────────────────────────
+      const cur = nodes.find(n => n.type === 'current');
+      const tgt = nodes.find(n => n.type === 'linked');
+      if (cur && tgt) {
+        ctx.save();
+        ctx.globalAlpha = 0.22;
+        ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 14;
+        ctx.shadowColor = '#ffd166'; ctx.shadowBlur = 30;
+        ctx.beginPath(); ctx.moveTo(cur.x, cur.y); ctx.lineTo(tgt.x, tgt.y); ctx.stroke();
+        ctx.globalAlpha = 0.85;
+        ctx.lineWidth   = 2.5; ctx.shadowBlur = 10;
+        ctx.beginPath(); ctx.moveTo(cur.x, cur.y); ctx.lineTo(tgt.x, tgt.y); ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    _drawNode(n) {
+      const { ctx, time } = this;
+      if (n.scale <= 0.01) return;
+
+      ctx.save();
+      ctx.globalAlpha = n.alpha;
+      ctx.translate(n.x, n.y);
+      ctx.scale(n.scale, n.scale);
+
+      const pulse = 1 + Math.sin(time * 2.2) * 0.05;
+      let color, r, fs, fw, baseAlpha = 1;
+
+      if (n.type === 'target') {
+        color = '#ff6b6b';
+        r     = 32 * (1 + Math.sin(time * 1.4) * 0.04);
+        fs = 13; fw = '600';
+      } else if (n.type === 'linked') {
+        color = '#ffd166';
+        r     = 38 * (1 + Math.sin(time * 3.0) * 0.08);
+        fs = 14; fw = '700';
+      } else {
+        // All path nodes coloured by their actual proximity to target
+        color = this._simToColor(n.simToTarget);
+        if (n.type === 'current') {
+          r = 34 * pulse; fs = 15; fw = '700';
+        } else {
+          // visited / start — slightly dimmer and smaller
+          r = 27; fs = 12; fw = '500';
+          baseAlpha = 0.72;
+        }
+      }
+
+      ctx.globalAlpha *= baseAlpha;
+
+      // Measure label first so we know if a pill is needed
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font         = `${fw} ${fs}px Outfit, sans-serif`;
+      const labelPad   = 14;
+      const measured   = ctx.measureText(n.word);
+      const pillW      = Math.max(r * 2, measured.width + labelPad * 2);
+      const isPill     = pillW > r * 2 + 2;
+
+      ctx.shadowColor  = color;
+      ctx.shadowBlur   = n.type === 'current' ? 28 : 16;
+
+      // Fill shape
+      ctx.beginPath();
+      if (isPill) ctx.roundRect(-pillW / 2, -r, pillW, r * 2, r);
+      else        ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(5,5,16,0.90)';
+      ctx.fill();
+      // Border
+      ctx.beginPath();
+      if (isPill) ctx.roundRect(-pillW / 2, -r, pillW, r * 2, r);
+      else        ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.strokeStyle = color;
+      ctx.lineWidth   = n.type === 'current' ? 2.5 : 1.6;
+      ctx.stroke();
+
+      ctx.shadowBlur = 0;
+
+      ctx.fillStyle = color;
+      ctx.fillText(n.word, 0, 0);
+
+      // Similarity-to-target percentage below every path node
+      if (n.type !== 'target' && n.type !== 'linked') {
+        ctx.font      = `400 9px Outfit, sans-serif`;
+        ctx.fillStyle = color;
+        ctx.globalAlpha *= 0.65;
+        ctx.fillText(Math.round(n.simToTarget * 100) + '%', 0, r + 12);
+      }
+
+      // Type label
+      if (n.type === 'start') {
+        ctx.font      = '500 8px Outfit, sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.38)';
+        ctx.globalAlpha = n.alpha * 0.6;
+        ctx.fillText('START', 0, -r - 11);
+      }
+      if (n.type === 'target' || n.type === 'linked') {
+        ctx.font      = '600 9px Outfit, sans-serif';
+        ctx.fillStyle = n.type === 'linked' ? 'rgba(255,209,102,0.7)' : 'rgba(255,107,107,0.6)';
+        ctx.fillText('TARGET', 0, r + 15);
+      }
+
+      ctx.restore();
+    }
+
+    _drawCelebParts() {
+      const { ctx, celebParts } = this;
+      celebParts.forEach(p => {
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.fill();
+        ctx.restore();
+      });
+    }
+
+    celebrate(x, y) {
+      const colors = ['#00f5d4', '#ffd166', '#a855f7', '#ff6b6b', '#0ea5e9'];
+      for (let i = 0; i < 40; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 2 + Math.random() * 5;
+        this.celebParts.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 2,
+          r: 2 + Math.random() * 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          life: 50 + Math.floor(Math.random() * 30),
+          maxLife: 80,
+          alpha: 1,
+        });
+      }
+    }
+
+    getCurrentNodePos() {
+      const n = this.nodes.find(n => n.type === 'current');
+      return n ? { x: n.x, y: n.y } : { x: this.W / 2, y: this.H / 2 };
+    }
+
+    getTargetNodePos() {
+      const n = this.nodes.find(n => n.type === 'target' || n.type === 'linked');
+      return n ? { x: n.x, y: n.y } : { x: this.W * 0.9, y: this.H / 2 };
+    }
+
+    // Called on win — turns the dashed guide line into a solid glowing link
+    linkToTarget() {
+      const n = this.nodes.find(n => n.type === 'target');
+      if (n) n.type = 'linked';
+    }
+
+    undoLastNode() {
+      const pathNodes = this.nodes.filter(n => n.type !== 'target' && n.type !== 'linked');
+      if (pathNodes.length <= 1) return;
+      const last = pathNodes[pathNodes.length - 1];
+      const prev = pathNodes[pathNodes.length - 2];
+      this.nodes = this.nodes.filter(n => n !== last);
+      prev.type = 'current';
+      this._reposition();
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     UI MANAGER
+  ═══════════════════════════════════════════════════════════ */
+  class UIManager {
+    constructor() {
+      this._screens = {
+        loading: document.getElementById('loading-screen'),
+        home:    document.getElementById('home-screen'),
+        game:    document.getElementById('game-screen'),
+        win:     document.getElementById('win-screen'),
+      };
+      this._current = 'loading';
+    }
+
+    async showScreen(name) {
+      const prev = this._screens[this._current];
+      const next = this._screens[name];
+      if (!next || name === this._current) return;
+
+      if (prev) {
+        // Leaving the win overlay — just fade it out, don't touch the screen beneath
+        if (this._current === 'win') {
+          await gsap.to(prev, { opacity: 0, duration: 0.32, ease: 'power2.in' });
+          prev.style.display = 'none';
+          gsap.set(prev, { opacity: 1 });
+          // If we're not going to game, also hide the game screen
+          if (name !== 'game') {
+            const gameEl = this._screens['game'];
+            gsap.to(gameEl, { opacity: 0, y: -24, duration: 0.32, ease: 'power2.in' })
+              .then(() => { gameEl.style.display = 'none'; gsap.set(gameEl, { opacity: 1, y: 0 }); });
+          }
+        } else if (name !== 'win') {
+          // Normal screen transition
+          await gsap.to(prev, { opacity: 0, y: -24, duration: 0.32, ease: 'power2.in' });
+          prev.style.display = 'none';
+          gsap.set(prev, { opacity: 1, y: 0 });
+        }
+        // When showing win: leave the game screen visible (do nothing to prev)
+      }
+      // If game screen is already visible (win overlay was on top), skip entry animation
+      const alreadyVisible = name === 'game' && this._current === 'win';
+      next.style.display = 'flex';
+      if (!alreadyVisible) {
+        gsap.fromTo(next, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.38, ease: 'power2.out' });
+      }
+      this._current = name;
+    }
+
+    setLoadingProgress(p, msg) {
+      document.getElementById('loading-fill').style.width = (p * 100) + '%';
+      if (msg) document.getElementById('loading-status').textContent = msg;
+    }
+
+    showToast(msg, type = 'neutral', dur = 2000) {
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      t.textContent = msg;
+      document.getElementById('toast-container').appendChild(t);
+      setTimeout(() => {
+        gsap.to(t, { opacity: 0, y: -8, duration: 0.25, onComplete: () => t.remove() });
+      }, dur);
+    }
+
+    initGame(puzzle, puzzleType) {
+      document.getElementById('hud-step-count').textContent      = '0';
+      document.getElementById('puzzle-type-label').textContent   = puzzleType;
+      document.getElementById('path-list').innerHTML             = '';
+      this.setCurrentWord(puzzle.start);
+      this._addPathItem(puzzle.start, 'start', null);
+      this.updateUndoButton(3, false);
+    }
+
+    updateUndoButton(undosLeft, canUndo) {
+      const btn = document.getElementById('btn-undo');
+      const cnt = document.getElementById('undo-count');
+      if (cnt) cnt.textContent = undosLeft;
+      if (btn) btn.disabled = !canUndo;
+    }
+
+    undoPathStep() {
+      const list  = document.getElementById('path-list');
+      const items = list.querySelectorAll('.path-item');
+      if (items.length <= 1) return;
+      items[items.length - 1].remove();
+      const newLast = list.querySelector('.path-item:last-child');
+      if (newLast && !newLast.classList.contains('start')) {
+        newLast.classList.add('current');
+        const dot = newLast.querySelector('.path-dot');
+        if (dot) dot.className = 'path-dot current';
+      }
+    }
+
+    setCurrentWord(word) {
+      document.getElementById('current-word-badge').textContent = word;
+    }
+
+    updateSteps(n) {
+      const el = document.getElementById('hud-step-count');
+      el.textContent = n;
+      gsap.fromTo(el, { scale: 1.4 }, { scale: 1, duration: 0.3, ease: 'back.out(2)' });
+    }
+
+
+    addPathStep(word, type, sim) {
+      this._addPathItem(word, type, sim);
+    }
+
+    _addPathItem(word, type, sim) {
+      const list = document.getElementById('path-list');
+      // Remove 'current' class from previous
+      list.querySelectorAll('.path-item.current').forEach(el => {
+        el.classList.remove('current');
+        el.querySelector('.path-dot').className = 'path-dot visited';
+      });
+      const item = document.createElement('div');
+      item.className = type === 'start' ? 'path-item start' : 'path-item current';
+      const dotType = type === 'start' ? 'start' : 'current';
+      const simText = sim != null ? `<span class="path-sim">${(sim * 100).toFixed(0)}%</span>` : '';
+      item.innerHTML = `<span class="path-dot ${dotType}"></span><span class="path-word">${word}</span>${simText}`;
+      list.appendChild(item);
+      list.scrollTop = list.scrollHeight;
+    }
+
+    flashAccepted() {
+      const wrap = document.getElementById('input-wrapper');
+      wrap.classList.add('flash-green');
+      setTimeout(() => wrap.classList.remove('flash-green'), 450);
+    }
+
+    flashRejected() {
+      const wrap = document.getElementById('input-wrapper');
+      wrap.classList.add('shake');
+      setTimeout(() => wrap.classList.remove('shake'), 400);
+    }
+
+    setInputEnabled(on) {
+      const inp = document.getElementById('word-input');
+      const btn = document.getElementById('btn-submit');
+      const spn = document.getElementById('spinner');
+      inp.disabled = !on;
+      btn.disabled = !on;
+      spn.classList.toggle('visible', !on);
+      if (on) inp.focus();
+    }
+
+    clearInput() { document.getElementById('word-input').value = ''; }
+
+    showWinScreen(state) {
+      document.getElementById('ws-steps').textContent = state.steps;
+      document.getElementById('input-bar').style.display = 'none';
+      this.showScreen('win');
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     TUTORIAL  (in-game overlay — spotlights on live gameplay)
+
+     Fixed tutorial puzzle: SOFTWARE → PIANO
+     Scripted words the player must type in order: computer, keyboard, piano
+  ═══════════════════════════════════════════════════════════ */
+  class Tutorial {
+    constructor() {
+      this._stage   = document.getElementById('tut-stage');
+      this._ring    = document.getElementById('tut-ring');
+      this._card    = document.getElementById('tut-card');
+      this._title   = document.getElementById('tut-card-title');
+      this._body    = document.getElementById('tut-card-body');
+      this._counter = document.getElementById('tut-step-counter');
+      this._okBtn   = document.getElementById('tut-ok-btn');
+      this._skipBtn = document.getElementById('tut-skip-btn');
+      this._hint    = document.getElementById('tut-hint');
+
+      this._step           = 0;
+      this._active         = false;
+      this._waitingForWord = false;
+      this._renderer       = null;
+      this._puzzle         = null;
+
+      // Words the player is guided to type, in order
+      this._scriptedWords  = ['computer', 'keyboard', 'piano'];
+      this._scriptedIdx    = -1;  // -1 = not currently scripted
+
+      this._okBtn.addEventListener('click',   () => this._advance());
+      this._skipBtn.addEventListener('click', () => this.end());
+
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && this._active && !this._waitingForWord &&
+            this._stage.classList.contains('active')) {
+          e.preventDefault();
+          this._advance();
+        }
+      });
+    }
+
+    setContext(renderer, puzzle) {
+      this._renderer = renderer;
+      this._puzzle   = puzzle;
+    }
+
+    start() {
+      this._step           = 0;
+      this._active         = true;
+      this._waitingForWord = false;
+      this._scriptedIdx    = -1;
+      // Wait for node-entry animations before showing first spotlight
+      setTimeout(() => this._showStep(), 800);
+    }
+
+    end() {
+      if (!this._active && !this._waitingForWord) return;
+      this._active         = false;
+      this._waitingForWord = false;
+      this._scriptedIdx    = -1;
+      this._hint.style.display = 'none';
+      gsap.to([this._ring, this._card], {
+        opacity: 0, duration: 0.25,
+        onComplete: () => { this._stage.classList.remove('active'); }
+      });
+    }
+
+    isActive()         { return this._active; }
+    isWaitingForWord() { return this._waitingForWord; }
+
+    // Returns the word the player must currently type, or null if free play
+    currentScriptedWord() {
+      return this._scriptedIdx >= 0
+        ? this._scriptedWords[this._scriptedIdx]
+        : null;
+    }
+
+    // Returns true when the player typed the correct scripted word
+    isScriptedMatch(word) {
+      const expected = this.currentScriptedWord();
+      return expected !== null && word.toLowerCase() === expected.toLowerCase();
+    }
+
+    // Called by submitWord after the step is accepted AND the game is NOT won
+    onWordAccepted() {
+      if (!this._waitingForWord) return;
+      const prevIdx        = this._scriptedIdx;
+      this._waitingForWord = false;
+      this._scriptedIdx    = -1;
+      this._hint.style.display = 'none';
+
+      // After "computer" → show the map-reading overlay (step 3)
+      if (prevIdx === 0) {
+        setTimeout(() => this._showStep(), 700);
+        return;
+      }
+      // After "keyboard" → skip overlay, prompt directly for "piano"
+      if (prevIdx === 1) {
+        this._waitingForWord = true;
+        this._scriptedIdx    = 2;
+        this._hint.textContent = `Almost there — type  "PIANO"  to reach the target →`;
+        this._hint.style.display = 'block';
+        document.getElementById('word-input').focus();
+        return;
+      }
+      // After "piano" (win didn't trigger) or anything else — free play
+      this.end();
+    }
+
+    _advance() {
+      // Step 2 (input bar) → scripted word 1: "computer"
+      if (this._step === 2) {
+        this._step = 3;
+        this._hideOverlay();
+        this._waitingForWord = true;
+        this._scriptedIdx    = 0;
+        this._hint.textContent = `Type  "${this._scriptedWords[0].toUpperCase()}"  and press Enter →`;
+        this._hint.style.display = 'block';
+        document.getElementById('word-input').focus();
+        return;
+      }
+      // Step 3 (computer node spotlight) → scripted word 2: "keyboard"
+      if (this._step === 3) {
+        this._step = 4;
+        this._hideOverlay();
+        this._waitingForWord = true;
+        this._scriptedIdx    = 1;
+        this._hint.textContent = `Now type  "${this._scriptedWords[1].toUpperCase()}"  and press Enter →`;
+        this._hint.style.display = 'block';
+        document.getElementById('word-input').focus();
+        return;
+      }
+      this._step++;
+      const steps = this._buildSteps();
+      if (this._step >= steps.length) { this.end(); return; }
+      this._showStep();
+    }
+
+    _hideOverlay() {
+      gsap.to([this._ring, this._card], {
+        opacity: 0, duration: 0.22,
+        onComplete: () => { this._stage.classList.remove('active'); }
+      });
+    }
+
+    _showStep() {
+      const steps = this._buildSteps();
+      const step  = steps[this._step];
+      if (!step) { this.end(); return; }
+
+      this._counter.textContent = `Step ${this._step + 1} of ${steps.length}`;
+      this._title.textContent   = step.title;
+      this._body.innerHTML      = step.body;
+      this._okBtn.textContent   = step.ok || 'Got it →';
+
+      this._stage.classList.add('active');
+      this._setRing(step);
+
+      requestAnimationFrame(() => {
+        this._positionCard();
+        gsap.fromTo([this._ring, this._card],
+          { opacity: 0, scale: 0.94 },
+          { opacity: 1, scale: 1, duration: 0.32, stagger: 0.07, ease: 'back.out(1.6)' });
+      });
+    }
+
+    _buildSteps() {
+      const r      = this._renderer;
+      const p      = this._puzzle;
+      const canvas = document.getElementById('game-canvas');
+      const cr     = canvas.getBoundingClientRect();
+      const isLand = window.innerWidth > window.innerHeight;
+
+      const startNode  = r.nodes.find(n => n.word === p.start);
+      const targetNode = r.nodes.find(n => n.type === 'target' || n.type === 'linked');
+      // The most recently added non-start current node (shown after a scripted word)
+      const curNode    = r.nodes.find(n => n.type === 'current' && n.word !== p.start);
+
+      const steps = [];
+
+      // ── Step 0: Start word ───────────────────────────────────
+      if (startNode) {
+        steps.push({
+          title: 'Your Start Word',
+          body: `The <strong style="color:var(--current)">${p.start.toUpperCase()}</strong> node is where you begin. The % underneath shows how similar it already is to the target.`,
+          ok: 'Got it →',
+          cx: cr.left + startNode.x, cy: cr.top + startNode.y, cr: 60,
+          shape: 'circle',
+        });
+      }
+
+      // ── Step 1: Target word ──────────────────────────────────
+      if (targetNode) {
+        const dirLabel = isLand ? 'to the right' : 'at the bottom';
+        steps.push({
+          title: 'Your Target Word',
+          body: `<strong style="color:var(--target)">${p.target.toUpperCase()}</strong> is your goal — it sits ${dirLabel} because it's the semantic destination. Bridge to it step by step.`,
+          ok: 'Got it →',
+          cx: cr.left + targetNode.x, cy: cr.top + targetNode.y, cr: 62,
+          shape: 'circle',
+        });
+      }
+
+      // ── Step 2: Input bar — tells player the first scripted word ──
+      const inputRect = document.getElementById('input-bar').getBoundingClientRect();
+      steps.push({
+        title: 'Make Your First Move',
+        body: `Type a word that's semantically close to <strong style="color:var(--current)">${p.start.toUpperCase()}</strong>. Each hop must be ≥50% similar. We'll start you off — click "Got it" to see your first word.`,
+        ok: 'Got it →',
+        rect: inputRect, pad: 8,
+        shape: 'rect',
+      });
+
+      // ── Step 3: First accepted node (computer) — reading the map ──
+      if (curNode) {
+        const towards = isLand ? 'to the right' : 'downward';
+        steps.push({
+          title: 'Reading the Map',
+          body: `The <strong>% under each node</strong> is its similarity to the target. Edges <strong style="color:#34d399">glow green</strong> when you moved closer and <strong style="color:#f87171">red</strong> when farther. Keep moving ${towards}!<br><br>You also have <strong>3 undos ↩</strong> per puzzle — use them if you take a wrong turn.`,
+          ok: `Got it →`,
+          cx: cr.left + curNode.x, cy: cr.top + curNode.y, cr: 60,
+          shape: 'circle',
+        });
+      }
+
+      return steps;
+    }
+
+    _setRing(step) {
+      const ring = this._ring;
+      if (step.shape === 'circle') {
+        const d = step.cr * 2;
+        ring.style.left         = (step.cx - step.cr) + 'px';
+        ring.style.top          = (step.cy - step.cr) + 'px';
+        ring.style.width        = d + 'px';
+        ring.style.height       = d + 'px';
+        ring.style.borderRadius = '50%';
+      } else {
+        const { rect, pad } = step;
+        ring.style.left         = (rect.left - pad) + 'px';
+        ring.style.top          = (rect.top  - pad) + 'px';
+        ring.style.width        = (rect.width  + pad * 2) + 'px';
+        ring.style.height       = (rect.height + pad * 2) + 'px';
+        ring.style.borderRadius = '14px';
+      }
+    }
+
+    _positionCard() {
+      const W  = window.innerWidth, H = window.innerHeight;
+      const rr = this._ring.getBoundingClientRect();
+      const cW = 272;
+      const cH = this._card.offsetHeight || 160;
+
+      let left = rr.left + rr.width / 2 - cW / 2;
+      left = Math.max(12, Math.min(W - cW - 12, left));
+
+      let top;
+      if (rr.bottom + 16 + cH < H - 12) {
+        top = rr.bottom + 16;
+      } else if (rr.top - 16 - cH > 12) {
+        top = rr.top - 16 - cH;
+      } else {
+        // Side placement
+        top  = Math.max(12, Math.min(H - cH - 12, rr.top + rr.height / 2 - cH / 2));
+        left = rr.right + 16 + cW < W - 8 ? rr.right + 16 : rr.left - cW - 16;
+        left = Math.max(12, Math.min(W - cW - 12, left));
+      }
+
+      this._card.style.left = left + 'px';
+      this._card.style.top  = top  + 'px';
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     BACKGROUND CANVAS (home + win screens)
+  ═══════════════════════════════════════════════════════════ */
+  function startBgCanvas(canvasId, color) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx    = canvas.getContext('2d');
+    let W, H, pts, raf;
+
+    function resize() {
+      W = canvas.width  = canvas.offsetWidth;
+      H = canvas.height = canvas.offsetHeight;
+    }
+    function init() {
+      resize();
+      pts = Array.from({ length: 40 }, () => ({
+        x: Math.random() * W, y: Math.random() * H,
+        vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4,
+        r: Math.random() * 1.8 + 0.4,
+      }));
+    }
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      pts.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0) p.x = W; else if (p.x > W) p.x = 0;
+        if (p.y < 0) p.y = H; else if (p.y > H) p.y = 0;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = color + '40'; ctx.fill();
+      });
+      ctx.lineWidth = 0.6;
+      for (let i = 0; i < pts.length; i++) {
+        for (let j = i + 1; j < pts.length; j++) {
+          const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y;
+          const d  = Math.sqrt(dx*dx + dy*dy);
+          if (d < 130) {
+            ctx.globalAlpha = (1 - d / 130) * 0.22;
+            ctx.strokeStyle = color;
+            ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[j].x, pts[j].y); ctx.stroke();
+          }
+        }
+      }
+      ctx.globalAlpha = 1;
+      raf = requestAnimationFrame(draw);
+    }
+    init();
+    draw();
+    window.addEventListener('resize', resize);
+    return () => cancelAnimationFrame(raf);
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     BOOTSTRAP / MAIN
+  ═══════════════════════════════════════════════════════════ */
+  (async function main() {
+
+    const puzzleMgr = new PuzzleManager();
+    const embedder  = new WordEmbedder();
+    const state     = new GameState();
+    const renderer  = new CanvasRenderer();
+    const ui        = new UIManager();
+    const tut       = new Tutorial();
+
+    let lastPuzzle    = null;
+    let dailyPlayed   = false;
+    let isTutorialGame = false;
+
+    // ── Load model ──────────────────────────────────────────
+    try {
+      await embedder.load((p, msg) => ui.setLoadingProgress(p, msg));
+    } catch (err) {
+      ui.setLoadingProgress(1, '⚠️ Failed to load AI model. Check your connection.');
+      console.error(err);
+      return;
+    }
+
+    // ── Background level generation ──────────────────────────
+    LevelGenerator.runInBackground(embedder, puzzleMgr);
+
+    // Stop loading canvas
+    if (window.stopLoadingAnim) window.stopLoadingAnim();
+
+    let homeBgStarted = false;
+    function showHome() {
+      tut.end();
+      ui.showScreen('home');
+      if (!homeBgStarted) {
+        homeBgStarted = true;
+        requestAnimationFrame(() => startBgCanvas('home-canvas', '#00f5d4'));
+      }
+    }
+
+    // First visit → drop straight into gameplay with the tutorial active
+    if (!localStorage.getItem('synapse-seen')) {
+      localStorage.setItem('synapse-seen', '1');
+      await startGame(PUZZLES[0], 'Tutorial');
+      tut.start();
+    } else {
+      showHome();
+    }
+
+    // ── Home buttons ────────────────────────────────────────
+    document.getElementById('btn-daily').addEventListener('click', () => {
+      startGame(puzzleMgr.getDailyPuzzle(), 'Daily Challenge');
+    });
+    document.getElementById('btn-random').addEventListener('click', () => {
+      startGame(puzzleMgr.getRandomPuzzle(lastPuzzle), 'Random Puzzle');
+    });
+    document.getElementById('btn-how-to').addEventListener('click', async () => {
+      await startGame(PUZZLES[0], 'Tutorial');  // always software → piano for scripted tutorial
+      tut.start();
+    });
+    document.getElementById('btn-custom').addEventListener('click', () => {
+      document.getElementById('custom-start').value  = '';
+      document.getElementById('custom-target').value = '';
+      document.getElementById('custom-error').style.display = 'none';
+      document.getElementById('custom-modal').style.display = 'flex';
+      document.getElementById('custom-start').focus();
+    });
+
+    // ── Custom game modal ─────────────────────────────────────
+    function hideCustomModal() {
+      document.getElementById('custom-modal').style.display = 'none';
+    }
+    document.getElementById('btn-custom-cancel').addEventListener('click', hideCustomModal);
+    document.getElementById('custom-modal').addEventListener('click', e => {
+      if (e.target === document.getElementById('custom-modal')) hideCustomModal();
+    });
+    document.getElementById('custom-target').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('btn-custom-play').click();
+    });
+    document.getElementById('custom-start').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('custom-target').focus();
+    });
+
+    document.getElementById('btn-custom-play').addEventListener('click', async () => {
+      const startW  = document.getElementById('custom-start').value.trim().toLowerCase();
+      const targetW = document.getElementById('custom-target').value.trim().toLowerCase();
+      const errEl   = document.getElementById('custom-error');
+
+      function showErr(msg) {
+        errEl.textContent    = msg;
+        errEl.style.display  = 'block';
+      }
+
+      errEl.style.display = 'none';
+
+      const wordRe = /^[a-z'-]+$/;
+      if (!startW || !wordRe.test(startW) || startW.length < 2) {
+        showErr('Start word must be at least 2 letters (a–z).'); return;
+      }
+      if (!targetW || !wordRe.test(targetW) || targetW.length < 2) {
+        showErr('Target word must be at least 2 letters (a–z).'); return;
+      }
+      if (startW === targetW) {
+        showErr('Start and target must be different words.'); return;
+      }
+      if (!embedder.isEnglishWord(startW)) {
+        showErr(`"${startW}" is not a recognised English word.`); return;
+      }
+      if (!embedder.isEnglishWord(targetW)) {
+        showErr(`"${targetW}" is not a recognised English word.`); return;
+      }
+
+      // Disable inputs while computing similarity
+      const playBtn = document.getElementById('btn-custom-play');
+      const inputs  = [document.getElementById('custom-start'), document.getElementById('custom-target')];
+      playBtn.disabled = true;
+      playBtn.textContent = 'Checking…';
+      inputs.forEach(i => i.disabled = true);
+
+      let sim;
+      try {
+        sim = await embedder.getSimilarity(startW, targetW);
+      } catch (_) {
+        sim = 0;
+      } finally {
+        playBtn.disabled = false;
+        playBtn.textContent = 'Play →';
+        inputs.forEach(i => i.disabled = false);
+      }
+
+      if (sim >= CFG.WIN_THRESHOLD) {
+        showErr(
+          `"${startW}" and "${targetW}" are already ${Math.round(sim * 100)}% similar — ` +
+          `too close to make a puzzle (need < ${Math.round(CFG.WIN_THRESHOLD * 100)}%). Try more distant words.`
+        );
+        return;
+      }
+
+      const par = sim > 0.42 ? 3 : sim > 0.33 ? 4 : sim > 0.22 ? 5 : 6;
+      hideCustomModal();
+      startGame({ start: startW, target: targetW, par }, 'Custom Game');
+    });
+
+    // ── Game buttons ─────────────────────────────────────────
+    document.getElementById('btn-home').addEventListener('click', () => {
+      renderer.stop();
+      showHome();
+    });
+    document.getElementById('btn-hint').addEventListener('click', () => {
+      // Re-run the tutorial if no context is set, otherwise show a simple toast
+      if (tut.isActive()) return;
+      ui.showToast('Type a word ≥50% similar to your current word to advance', 'neutral', 3500);
+    });
+    document.getElementById('btn-undo').addEventListener('click', performUndo);
+    document.getElementById('btn-give-up').addEventListener('click', () => {
+      ui.showToast('Better luck next time!', 'neutral', 2500);
+      renderer.stop();
+      showHome();
+    });
+
+    // ── Input ────────────────────────────────────────────────
+    const wordInput = document.getElementById('word-input');
+    wordInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') submitWord();
+    });
+    document.getElementById('btn-submit').addEventListener('click', submitWord);
+
+    // ── Win screen buttons ────────────────────────────────────
+    document.getElementById('btn-play-again').addEventListener('click', () => {
+      startGame(puzzleMgr.getRandomPuzzle(lastPuzzle), 'Random Puzzle');
+    });
+    document.getElementById('btn-home-win').addEventListener('click', () => {
+      showHome();
+    });
+
+    // ── Start game ───────────────────────────────────────────
+    async function startGame(puzzle, label) {
+      lastPuzzle     = puzzle;
+      isTutorialGame = (label === 'Tutorial');
+      state.init(puzzle);
+      renderer.reset();
+      ui.initGame(puzzle, label);
+      document.getElementById('input-bar').style.display = '';
+      await ui.showScreen('game');
+
+      // Init canvas
+      renderer.init(document.getElementById('game-canvas'));
+
+      // Pre-compute start→target similarity to position start node correctly
+      ui.setInputEnabled(false);
+      let initSim = 0.05;
+      try {
+        initSim = await embedder.getSimilarity(puzzle.start, puzzle.target);
+      } catch (_) {}
+
+      // Add start node (positioned by its actual similarity to target) and target node
+      renderer.addNode(puzzle.start, 'current', initSim);
+      renderer.addNode(puzzle.target, 'target', 1.0);
+
+      tut.setContext(renderer, puzzle);
+      ui.setInputEnabled(true);
+    }
+
+    // ── Submit word ──────────────────────────────────────────
+    async function submitWord() {
+      const raw  = wordInput.value.trim().toLowerCase();
+      if (!raw) return;
+
+      // Basic validation
+      if (!/^[a-z'-]+$/.test(raw) || raw.length < 2 || raw.length > 28) {
+        ui.showToast('Please enter a valid word (letters only, 2–28 chars)', 'error');
+        ui.flashRejected();
+        ui.clearInput();
+        return;
+      }
+
+      // Prevent repeated words
+      if (state.path.includes(raw)) {
+        ui.showToast('You\'ve already used that word!', 'warning');
+        ui.flashRejected();
+        ui.clearInput();
+        return;
+      }
+
+      ui.setInputEnabled(false);
+
+      // ── Tutorial scripted-word enforcement ─────────────────
+      // If the tutorial is expecting a specific word, redirect the player
+      // before even hitting the dictionary or similarity APIs.
+      if (tut.isActive() && tut.isWaitingForWord() && !tut.isScriptedMatch(raw)) {
+        const expected = tut.currentScriptedWord();
+        if (expected) {
+          ui.showToast(`For the tutorial, type "${expected.toUpperCase()}"`, 'warning', 2500);
+          ui.flashRejected();
+          ui.clearInput();
+          ui.setInputEnabled(true);
+          return;
+        }
+      }
+
+      // Validate against local word list
+      // (skipped for scripted tutorial words — we know they're valid)
+      if (!tut.isScriptedMatch(raw)) {
+        const isValid = embedder.isEnglishWord(raw);
+        if (!isValid) {
+          ui.showToast(`"${raw}" is not a recognised English word`, 'error');
+          ui.flashRejected();
+          ui.setInputEnabled(true);
+          return;
+        }
+      }
+      ui.clearInput();
+
+      try {
+        const isScripted = tut.isScriptedMatch(raw);
+
+        const [stepSim, targetSim] = await Promise.all([
+          embedder.getSimilarity(state.currentWord, raw),
+          embedder.getSimilarity(raw, state.puzzle.target),
+        ]);
+
+        // Check minimum similarity threshold
+        if (stepSim < CFG.MIN_SIM) {
+          const pct = (stepSim * 100).toFixed(1);
+          ui.showToast(
+            `No link — "${raw}" (${pct}%) is too distant from "${state.currentWord}". Need ≥${Math.round(CFG.MIN_SIM * 100)}%.`,
+            'error', 3200
+          );
+          ui.flashRejected();
+          ui.setInputEnabled(true);
+          return;
+        }
+
+        // Accept the step
+        state.addStep(raw, stepSim, targetSim);
+        ui.setCurrentWord(raw);
+        ui.updateSteps(state.steps);
+        ui.updateUndoButton(state.undosLeft, state.canUndo());
+        ui.flashAccepted();
+
+        // Update canvas — keep the start node styled as 'start', not 'visited'
+        const prevWord = state.path[state.path.length - 2];
+        renderer.setNodeType(prevWord, prevWord === state.puzzle.start ? 'start' : 'visited');
+        renderer.addNode(raw, 'current', targetSim);
+
+        // Check win BEFORE tutorial callback so we don't schedule a dead spotlight
+        if (state.isWon(raw, targetSim)) {
+          tut.end();
+          const pct = (targetSim * 100).toFixed(0);
+          ui.showToast(`Linked to "${state.puzzle.target}"! (${pct}%)`, 'success', 2000);
+          await handleWin();
+          return;
+        }
+
+        // Non-winning step: advance tutorial overlay if it's waiting
+        tut.onWordAccepted();
+
+        const stepPct = (stepSim * 100).toFixed(0);
+        ui.showToast(`Connected (${stepPct}%)`, 'neutral', 1600);
+
+        ui.addPathStep(raw, 'step', stepSim);
+
+      } catch (err) {
+        console.error(err);
+        ui.showToast('Something went wrong — please try again', 'error');
+      }
+
+      ui.setInputEnabled(true);
+    }
+
+    // ── Win ──────────────────────────────────────────────────
+    async function handleWin() {
+      // Solidify the link to target on the canvas
+      renderer.linkToTarget();
+
+      // Burst at current word, then at target
+      const curPos = renderer.getCurrentNodePos();
+      const tgtPos = renderer.getTargetNodePos();
+      renderer.celebrate(curPos.x, curPos.y);
+      setTimeout(() => renderer.celebrate(tgtPos.x, tgtPos.y), 180);
+      setTimeout(() => renderer.celebrate(curPos.x, curPos.y), 360);
+      setTimeout(() => renderer.celebrate(tgtPos.x, tgtPos.y), 540);
+
+      await new Promise(r => setTimeout(r, 900));
+      document.getElementById('btn-play-again').textContent =
+        isTutorialGame ? 'Start Game' : 'Play Again';
+      ui.showWinScreen(state);
+    }
+
+    // ── Undo ─────────────────────────────────────────────────
+    function performUndo() {
+      if (!state.canUndo()) return;
+      if (tut.isActive()) return;
+
+      const removed = state.undo();
+      if (!removed) return;
+
+      renderer.undoLastNode();
+      ui.undoPathStep();
+      ui.setCurrentWord(state.currentWord);
+      ui.updateSteps(state.steps);
+      ui.updateUndoButton(state.undosLeft, state.canUndo());
+      const left = state.undosLeft;
+      ui.showToast(`↩ Undid "${removed}" — ${left} undo${left !== 1 ? 's' : ''} left`, 'neutral', 2000);
+    }
+
+  })();
+  </script>
+</body>
+</html>
