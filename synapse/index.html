@@ -415,6 +415,23 @@
     .btn-undo:hover:not(:disabled) { background: rgba(168,85,247,0.08); border-color: rgba(168,85,247,0.4); color: var(--visited); }
     .btn-undo:disabled { opacity: 0.3; cursor: not-allowed; }
     @media (max-width: 480px) { .btn-undo { padding: 8px 8px; } }
+    .btn-word-hint {
+      flex-shrink: 0;
+      padding: 8px 12px;
+      background: transparent;
+      border: 1px solid rgba(255,209,102,0.25);
+      color: rgba(255,209,102,0.6);
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-family: inherit;
+    }
+    .btn-word-hint:hover:not(:disabled) { background: rgba(255,209,102,0.08); border-color: rgba(255,209,102,0.4); color: var(--gold); }
+    .btn-word-hint:disabled { opacity: 0.3; cursor: not-allowed; }
+    @media (max-width: 480px) { .btn-word-hint { padding: 8px 8px; } }
     .checking-spinner {
       width: 16px; height: 16px;
       border: 2px solid rgba(255,255,255,0.1);
@@ -488,6 +505,53 @@
     }
     .score-row.total .value { color: var(--gold); font-size: 24px; }
     .win-buttons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+    .win-stats {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .win-stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+    .win-stat-label { color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .win-stat-value { font-weight: 700; color: var(--fg); }
+    .win-chain-wrap { width: 100%; }
+    .win-chain-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+    .win-chain {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px;
+      width: 100%;
+    }
+    .win-chain-word {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 3px 8px;
+      border-radius: 20px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      color: var(--fg);
+    }
+    .win-chain-word.chain-start { border-color: var(--current); color: var(--current); }
+    .win-chain-word.chain-end   { border-color: var(--gold);    color: var(--gold); }
+    .win-chain-arrow {
+      font-size: 11px;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
 
     /* ─── In-Game Tutorial ───────────────────────────────────────── */
     #tut-stage {
@@ -716,9 +780,22 @@
       .hud-item { min-width: 44px; }
       .hud-value { font-size: 18px; }
     }
-    @media (max-width: 480px) {
+    .input-bar-break { display: none; width: 100%; height: 0; }
 
+    @media (max-width: 480px) {
       .btn-give-up { display: none; }
+    }
+    @media (max-width: 560px) {
+      #input-bar {
+        flex-wrap: wrap;
+        height: auto;
+        padding: 8px 12px;
+        gap: 8px;
+        align-items: center;
+      }
+      .input-bar-break { display: block; }
+      #btn-undo { flex: 1; justify-content: center; }
+      #btn-word-hint { flex: 1; justify-content: center; }
     }
     @media (orientation: portrait) {
       #win-screen {
@@ -739,6 +816,55 @@
         overflow-y: auto;
       }
     }
+
+    /* ─── On-Screen Keyboard ─────────────────────────────────── */
+    #osk {
+      display: none;
+      flex-shrink: 0;
+      flex-direction: column;
+      gap: 5px;
+      padding: 6px 8px 12px;
+      background: rgba(5,5,16,0.97);
+      border-top: 1px solid var(--panel-border);
+    }
+    .touch-device #osk { display: flex; }
+    .osk-row {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+    }
+    .osk-key {
+      flex: 1;
+      max-width: 42px;
+      height: 40px;
+      background: rgba(255,255,255,0.09);
+      border: 1px solid rgba(255,255,255,0.13);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      padding: 0;
+    }
+    .osk-key:active { background: rgba(0,245,212,0.25); }
+    #osk.osk-disabled .osk-key { opacity: 0.35; pointer-events: none; }
+    .osk-wide { max-width: 58px; flex: 1.4; font-size: 18px; }
+    .osk-enter {
+      max-width: 90px;
+      flex: 2.5;
+      background: rgba(0,245,212,0.12);
+      border-color: rgba(0,245,212,0.28);
+      font-size: 13px;
+      letter-spacing: 1px;
+      color: var(--current);
+    }
+    .osk-enter:active { background: rgba(0,245,212,0.3); }
   </style>
 </head>
 <body>
@@ -828,8 +954,17 @@
         />
         <button id="btn-submit" class="btn-submit" title="Submit">→</button>
       </div>
+      <div class="input-bar-break"></div>
       <button id="btn-undo" class="btn-undo" title="Undo last step" disabled>↩ <span id="undo-count">3</span></button>
+      <button id="btn-word-hint" class="btn-word-hint" title="Get a hint word" disabled>💡 <span id="hint-count">3</span></button>
       <button id="btn-give-up" class="btn-give-up">Give Up</button>
+    </div>
+
+    <!-- On-screen keyboard (shown only on touch devices) -->
+    <div id="osk">
+      <div class="osk-row" id="osk-r1"></div>
+      <div class="osk-row" id="osk-r2"></div>
+      <div class="osk-row" id="osk-r3"></div>
     </div>
   </div>
 
@@ -840,6 +975,20 @@
       <div class="win-steps">
         <span class="step-count" id="ws-steps">0</span>
         <span class="step-label">steps taken</span>
+      </div>
+      <div class="win-stats">
+        <div class="win-stat-row">
+          <span class="win-stat-label">Time</span>
+          <span class="win-stat-value" id="ws-time">—</span>
+        </div>
+        <div class="win-stat-row">
+          <span class="win-stat-label">Words rejected</span>
+          <span class="win-stat-value" id="ws-rejected">0</span>
+        </div>
+      </div>
+      <div class="win-chain-wrap">
+        <div class="win-chain-label">Your path</div>
+        <div class="win-chain" id="ws-chain"></div>
       </div>
       <div class="win-buttons">
         <button id="btn-play-again" class="btn-primary">Play Again</button>
@@ -1212,7 +1361,7 @@
             const hit = await c.match(url);
             if (hit) return hit.clone();
             const res = await origFetch(input, init);
-            if (res?.ok) await c.put(url, res.clone());
+            if (res?.ok) c.put(url, res.clone()).catch(() => {});
             return res;
           } catch {
             return origFetch(input, init);
@@ -1285,14 +1434,17 @@
     constructor() { this._reset(); }
 
     _reset() {
-      this.puzzle      = null;
-      this.currentWord = '';
-      this.path        = [];       // [word, ...]
-      this.stepSims    = [];       // similarity of each step (to previous word)
-      this.targetSims  = [];       // similarity of each word to target
-      this.steps       = 0;
-      this.undosLeft   = 3;
-      this.status      = 'idle';   // idle | playing | won | gave_up
+      this.puzzle        = null;
+      this.currentWord   = '';
+      this.path          = [];       // [word, ...]
+      this.stepSims      = [];       // similarity of each step (to previous word)
+      this.targetSims    = [];       // similarity of each word to target
+      this.steps         = 0;
+      this.undosLeft     = 3;
+      this.hintsLeft     = 3;
+      this.status        = 'idle';   // idle | playing | won | gave_up
+      this.rejectedCount = 0;
+      this.startTime     = null;
     }
 
     init(puzzle) {
@@ -1301,6 +1453,7 @@
       this.currentWord = puzzle.start;
       this.path        = [puzzle.start];
       this.status      = 'playing';
+      this.startTime   = Date.now();
     }
 
     addStep(word, stepSim, targetSim) {
@@ -1979,10 +2132,11 @@
       const next = this._screens[name];
       if (!next || name === this._current) return;
 
+      const animTimeout = ms => new Promise(r => setTimeout(r, ms));
       if (prev) {
         // Leaving the win overlay — just fade it out, don't touch the screen beneath
         if (this._current === 'win') {
-          await gsap.to(prev, { opacity: 0, duration: 0.32, ease: 'power2.in' });
+          await Promise.race([gsap.to(prev, { opacity: 0, duration: 0.32, ease: 'power2.in' }), animTimeout(600)]);
           prev.style.display = 'none';
           gsap.set(prev, { opacity: 1 });
           // If we're not going to game, also hide the game screen
@@ -1993,7 +2147,7 @@
           }
         } else if (name !== 'win') {
           // Normal screen transition
-          await gsap.to(prev, { opacity: 0, y: -24, duration: 0.32, ease: 'power2.in' });
+          await Promise.race([gsap.to(prev, { opacity: 0, y: -24, duration: 0.32, ease: 'power2.in' }), animTimeout(600)]);
           prev.style.display = 'none';
           gsap.set(prev, { opacity: 1, y: 0 });
         }
@@ -2030,6 +2184,7 @@
       this.setCurrentWord(puzzle.start);
       this._addPathItem(puzzle.start, 'start', null);
       this.updateUndoButton(3, false);
+      this.updateHintButton(3);
     }
 
     updateUndoButton(undosLeft, canUndo) {
@@ -2037,6 +2192,13 @@
       const cnt = document.getElementById('undo-count');
       if (cnt) cnt.textContent = undosLeft;
       if (btn) btn.disabled = !canUndo;
+    }
+
+    updateHintButton(hintsLeft) {
+      const btn = document.getElementById('btn-word-hint');
+      const cnt = document.getElementById('hint-count');
+      if (cnt) cnt.textContent = hintsLeft;
+      if (btn) btn.disabled = hintsLeft <= 0;
     }
 
     undoPathStep() {
@@ -2095,13 +2257,18 @@
       setTimeout(() => wrap.classList.remove('shake'), 400);
     }
 
-    setInputEnabled(on) {
+    setInputEnabled(on, hintsLeft) {
       const inp = document.getElementById('word-input');
       const btn = document.getElementById('btn-submit');
       const spn = document.getElementById('spinner');
+      const osk = document.getElementById('osk');
+      const hnt = document.getElementById('btn-word-hint');
       inp.disabled = !on;
       btn.disabled = !on;
       spn.classList.toggle('visible', !on);
+      if (osk) osk.classList.toggle('osk-disabled', !on);
+      if (hnt && hintsLeft !== undefined) hnt.disabled = !on || hintsLeft <= 0;
+      else if (hnt) hnt.disabled = !on;
       if (on) inp.focus();
     }
 
@@ -2109,6 +2276,34 @@
 
     showWinScreen(state) {
       document.getElementById('ws-steps').textContent = state.steps;
+
+      // Time taken
+      const elapsed = state.startTime ? Math.round((Date.now() - state.startTime) / 1000) : 0;
+      const mins = Math.floor(elapsed / 60);
+      const secs = elapsed % 60;
+      document.getElementById('ws-time').textContent =
+        mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+
+      // Rejected words
+      document.getElementById('ws-rejected').textContent = state.rejectedCount;
+
+      // Word chain
+      const chainEl = document.getElementById('ws-chain');
+      chainEl.innerHTML = '';
+      state.path.forEach((word, i) => {
+        const pill = document.createElement('span');
+        pill.className = 'win-chain-word' +
+          (i === 0 ? ' chain-start' : i === state.path.length - 1 ? ' chain-end' : '');
+        pill.textContent = word.toUpperCase();
+        chainEl.appendChild(pill);
+        if (i < state.path.length - 1) {
+          const arrow = document.createElement('span');
+          arrow.className = 'win-chain-arrow';
+          arrow.textContent = '→';
+          chainEl.appendChild(arrow);
+        }
+      });
+
       document.getElementById('input-bar').style.display = 'none';
       this.showScreen('win');
     }
@@ -2132,21 +2327,26 @@
       this._skipBtn = document.getElementById('tut-skip-btn');
       this._hint    = document.getElementById('tut-hint');
 
-      this._step           = 0;
-      this._active         = false;
-      this._waitingForWord = false;
-      this._renderer       = null;
-      this._puzzle         = null;
+      this._step                  = 0;
+      this._active                = false;
+      this._waitingForWord        = false;
+      this._waitingForUndo        = false;
+      this._customStep            = null;   // 'computer' | 'hardware' | 'undo' | 'complete' | null
+      this._hardwareNodeSnapshot  = null;   // stored when hardware node is placed
+      this._renderer              = null;
+      this._puzzle                = null;
+      this.onSkip                 = null;  // called after end() when player skips
+      this.onComplete             = null;  // called when tutorial ends successfully
 
       // Words the player is guided to type, in order
-      this._scriptedWords  = ['computer', 'keyboard', 'piano'];
+      this._scriptedWords  = ['computer', 'hardware', 'keyboard'];
       this._scriptedIdx    = -1;  // -1 = not currently scripted
 
       this._okBtn.addEventListener('click',   () => this._advance());
-      this._skipBtn.addEventListener('click', () => this.end());
+      this._skipBtn.addEventListener('click', () => { this.end(); if (this.onSkip) this.onSkip(); });
 
       document.addEventListener('keydown', e => {
-        if (e.key === 'Enter' && this._active && !this._waitingForWord &&
+        if (e.key === 'Enter' && this._active && !this._waitingForWord && !this._waitingForUndo &&
             this._stage.classList.contains('active')) {
           e.preventDefault();
           this._advance();
@@ -2160,18 +2360,23 @@
     }
 
     start() {
-      this._step           = 0;
-      this._active         = true;
-      this._waitingForWord = false;
-      this._scriptedIdx    = -1;
+      this._step                 = 0;
+      this._active               = true;
+      this._waitingForWord       = false;
+      this._waitingForUndo       = false;
+      this._customStep           = null;
+      this._hardwareNodeSnapshot = null;
+      this._scriptedIdx          = -1;
       // Wait for node-entry animations before showing first spotlight
       setTimeout(() => this._showStep(), 800);
     }
 
     end() {
-      if (!this._active && !this._waitingForWord) return;
+      if (!this._active && !this._waitingForWord && !this._waitingForUndo) return;
       this._active         = false;
       this._waitingForWord = false;
+      this._waitingForUndo = false;
+      this._customStep     = null;
       this._scriptedIdx    = -1;
       this._hint.style.display = 'none';
       gsap.to([this._ring, this._card], {
@@ -2182,6 +2387,7 @@
 
     isActive()         { return this._active; }
     isWaitingForWord() { return this._waitingForWord; }
+    isWaitingForUndo() { return this._waitingForUndo; }
 
     // Returns the word the player must currently type, or null if free play
     currentScriptedWord() {
@@ -2204,43 +2410,78 @@
       this._scriptedIdx    = -1;
       this._hint.style.display = 'none';
 
-      // After "computer" → show the map-reading overlay (step 3)
+      // After "computer" (idx 0) → show "good move" custom overlay
       if (prevIdx === 0) {
-        setTimeout(() => this._showStep(), 700);
+        setTimeout(() => this._showCustomStep('computer'), 700);
         return;
       }
-      // After "keyboard" → skip overlay, prompt directly for "piano"
+      // After "hardware" (idx 1) → capture node position, show "bad move" custom overlay
       if (prevIdx === 1) {
+        const hwNode = this._renderer.nodes.find(n => n.word === 'hardware');
+        if (hwNode) this._hardwareNodeSnapshot = { x: hwNode.x, y: hwNode.y };
+        setTimeout(() => this._showCustomStep('hardware'), 700);
+        return;
+      }
+      // After "keyboard" (idx 2) → show completion overlay
+      if (prevIdx === 2) {
+        setTimeout(() => this._showCustomStep('complete'), 700);
+        return;
+      }
+      this.end();
+    }
+
+    // Called by performUndo when tutorial is waiting for an undo
+    onUndoPerformed() {
+      if (!this._waitingForUndo) return;
+      this._waitingForUndo = false;
+      this._waitingForWord = true;
+      this._scriptedIdx    = 2;  // 'keyboard'
+      this._hint.textContent = `Good undo! Now type  "KEYBOARD"  and press Enter →`;
+      this._hint.style.display = 'block';
+      document.getElementById('word-input').focus();
+    }
+
+    _advance() {
+      // Custom overlay: "tutorial complete" → end tutorial and fire onComplete
+      if (this._customStep === 'complete') {
+        this._customStep = null;
+        this.end();
+        if (this.onComplete) this.onComplete();
+        return;
+      }
+      // Custom overlay: "computer good move" → scripted word 1: "hardware"
+      if (this._customStep === 'computer') {
+        this._customStep = null;
+        this._hideOverlay();
         this._waitingForWord = true;
-        this._scriptedIdx    = 2;
-        this._hint.textContent = `Almost there — type  "PIANO"  to reach the target →`;
+        this._scriptedIdx    = 1;
+        this._hint.textContent = `Now type  "HARDWARE"  and press Enter →`;
         this._hint.style.display = 'block';
         document.getElementById('word-input').focus();
         return;
       }
-      // After "piano" (win didn't trigger) or anything else — free play
-      this.end();
-    }
-
-    _advance() {
-      // Step 2 (input bar) → scripted word 1: "computer"
-      if (this._step === 2) {
+      // Custom overlay: "hardware bad move" → show undo button overlay
+      if (this._customStep === 'hardware') {
+        this._customStep = null;
+        this._showCustomStep('undo');
+        return;
+      }
+      // Custom overlay: "undo button" → wait for player to click undo
+      if (this._customStep === 'undo') {
+        this._customStep     = null;
+        this._waitingForUndo = true;
+        this._hint.textContent = `Click the  ↩ UNDO  button now →`;
+        this._hint.style.display = 'block';
+        this._hideOverlay();
+        return;
+      }
+      // Step 3 (input bar) → scripted word 0: "computer"
+      if (this._step === 3) {
         this._step = 3;
         this._hideOverlay();
         this._waitingForWord = true;
         this._scriptedIdx    = 0;
-        this._hint.textContent = `Type  "${this._scriptedWords[0].toUpperCase()}"  and press Enter →`;
-        this._hint.style.display = 'block';
-        document.getElementById('word-input').focus();
-        return;
-      }
-      // Step 3 (computer node spotlight) → scripted word 2: "keyboard"
-      if (this._step === 3) {
-        this._step = 4;
-        this._hideOverlay();
-        this._waitingForWord = true;
-        this._scriptedIdx    = 1;
-        this._hint.textContent = `Now type  "${this._scriptedWords[1].toUpperCase()}"  and press Enter →`;
+        this._hint.textContent = `Type  "COMPUTER"  and press Enter →`;
         this._hint.style.display = 'block';
         document.getElementById('word-input').focus();
         return;
@@ -2258,12 +2499,58 @@
       });
     }
 
-    _showStep() {
-      const steps = this._buildSteps();
-      const step  = steps[this._step];
-      if (!step) { this.end(); return; }
+    _showCustomStep(name) {
+      this._customStep = name;
+      const r      = this._renderer;
+      const p      = this._puzzle;
+      const canvas = document.getElementById('game-canvas');
+      const cr     = canvas.getBoundingClientRect();
+      const isLand = window.innerWidth > window.innerHeight;
+      const towards = isLand ? 'to the right' : 'downward';
 
-      this._counter.textContent = `Step ${this._step + 1} of ${steps.length}`;
+      let step;
+      if (name === 'computer') {
+        const node = r.nodes.find(n => n.word === 'computer');
+        step = {
+          title: 'Great Move!',
+          body: `See the <strong style="color:#34d399">green edge</strong>? <strong>COMPUTER</strong>'s score is higher than <strong style="color:var(--current)">SOFTWARE</strong>'s — you moved <em>closer</em> to <strong style="color:var(--target)">PIANO</strong>. Keep heading ${towards}!`,
+          ok: 'Got it →',
+          cx: cr.left + node.x, cy: cr.top + node.y, cr: 60,
+          shape: 'circle',
+        };
+      } else if (name === 'hardware') {
+        const pos = this._hardwareNodeSnapshot || { x: 0, y: 0 };
+        step = {
+          title: 'That Went Backwards!',
+          body: `The edge turned <strong style="color:#f87171">red</strong> — <strong>HARDWARE</strong>'s score is <em>lower</em> than COMPUTER's. That hop took you farther from <strong style="color:var(--target)">PIANO</strong>. Time to undo it!`,
+          ok: 'Got it →',
+          cx: cr.left + pos.x, cy: cr.top + pos.y, cr: 60,
+          shape: 'circle',
+        };
+      } else if (name === 'undo') {
+        const undoRect = document.getElementById('btn-undo').getBoundingClientRect();
+        step = {
+          title: 'Use Undo!',
+          body: `Click <strong>↩ UNDO</strong> to take that step back. You get <strong>3 undos per puzzle</strong> — save them for dead ends like this one.`,
+          ok: 'Click Undo →',
+          rect: undoRect, pad: 8,
+          shape: 'rect',
+        };
+      } else if (name === 'complete') {
+        const node = r.nodes.find(n => n.word === 'keyboard');
+        step = {
+          title: 'You\'re a Natural!',
+          body: `You bridged SOFTWARE → COMPUTER → KEYBOARD → PIANO, reading the map and using undo like a pro.<br><br>Ready to tackle a real puzzle?`,
+          ok: 'Yes!',
+          cx: node ? cr.left + node.x : cr.left + (canvas.width / 2),
+          cy: node ? cr.top  + node.y : cr.top  + (canvas.height / 2),
+          cr: 60,
+          shape: 'circle',
+        };
+      }
+      if (!step) return;
+
+      this._counter.textContent = '';
       this._title.textContent   = step.title;
       this._body.innerHTML      = step.body;
       this._okBtn.textContent   = step.ok || 'Got it →';
@@ -2279,6 +2566,27 @@
       });
     }
 
+    _showStep() {
+      const steps = this._buildSteps();
+      const step  = steps[this._step];
+      if (!step) { this.end(); return; }
+
+      this._counter.textContent = step.counter ?? `Step ${this._step + 1} of ${steps.length}`;
+      this._title.textContent   = step.title;
+      this._body.innerHTML      = step.body;
+      this._okBtn.textContent   = step.ok || 'Got it →';
+
+      this._stage.classList.add('active');
+      this._setRing(step);
+
+      requestAnimationFrame(() => {
+        this._positionCard(step);
+        gsap.fromTo([this._ring, this._card],
+          { opacity: 0, scale: 0.94 },
+          { opacity: 1, scale: 1, duration: 0.32, stagger: 0.07, ease: 'back.out(1.6)' });
+      });
+    }
+
     _buildSteps() {
       const r      = this._renderer;
       const p      = this._puzzle;
@@ -2288,12 +2596,19 @@
 
       const startNode  = r.nodes.find(n => n.word === p.start);
       const targetNode = r.nodes.find(n => n.type === 'target' || n.type === 'linked');
-      // The most recently added non-start current node (shown after a scripted word)
-      const curNode    = r.nodes.find(n => n.type === 'current' && n.word !== p.start);
 
       const steps = [];
 
-      // ── Step 0: Start word ───────────────────────────────────
+      // ── Step 0: Welcome ──────────────────────────────────────
+      steps.push({
+        counter: 'Welcome',
+        title: 'Welcome to SYNAPSE',
+        body: `Words have hidden <strong style="color:var(--current)">meaning</strong> — and that meaning can be measured.<br><br>In SYNAPSE you hop from a <strong style="color:var(--current)">start word</strong> to a <strong style="color:var(--target)">target word</strong> one step at a time. Each word you type must be semantically close to your current word — the closer, the better.<br><br>The goal: reach the target in as few hops as possible.`,
+        ok: "Let's go →",
+        shape: 'none',
+      });
+
+      // ── Step 1: Start word ───────────────────────────────────
       if (startNode) {
         steps.push({
           title: 'Your Start Word',
@@ -2304,7 +2619,7 @@
         });
       }
 
-      // ── Step 1: Target word ──────────────────────────────────
+      // ── Step 2: Target word ──────────────────────────────────
       if (targetNode) {
         const dirLabel = isLand ? 'to the right' : 'at the bottom';
         steps.push({
@@ -2316,41 +2631,39 @@
         });
       }
 
-      // ── Step 2: Input bar — tells player the first scripted word ──
+      // ── Step 3: Input bar — prompt for first scripted word ──
       const inputRect = document.getElementById('input-bar').getBoundingClientRect();
       steps.push({
         title: 'Make Your First Move',
-        body: `Type a word that's semantically close to <strong style="color:var(--current)">${p.start.toUpperCase()}</strong>. Each hop must be ≥50% similar. We'll start you off — click "Got it" to see your first word.`,
+        body: `Type a word semantically close to <strong style="color:var(--current)">${p.start.toUpperCase()}</strong> and press Enter. Each hop must be ≥50% similar. Click "Got it" and we'll show you a good starting word.`,
         ok: 'Got it →',
         rect: inputRect, pad: 8,
         shape: 'rect',
       });
-
-      // ── Step 3: First accepted node (computer) — reading the map ──
-      if (curNode) {
-        const towards = isLand ? 'to the right' : 'downward';
-        steps.push({
-          title: 'Reading the Map',
-          body: `The <strong>% under each node</strong> is its similarity to the target. Edges <strong style="color:#34d399">glow green</strong> when you moved closer and <strong style="color:#f87171">red</strong> when farther. Keep moving ${towards}!<br><br>You also have <strong>3 undos ↩</strong> per puzzle — use them if you take a wrong turn.`,
-          ok: `Got it →`,
-          cx: cr.left + curNode.x, cy: cr.top + curNode.y, cr: 60,
-          shape: 'circle',
-        });
-      }
 
       return steps;
     }
 
     _setRing(step) {
       const ring = this._ring;
-      if (step.shape === 'circle') {
+      if (step.shape === 'none') {
+        // Cover the full viewport so the shadow overlay darkens everything uniformly
+        ring.style.left         = '0px';
+        ring.style.top          = '0px';
+        ring.style.width        = window.innerWidth  + 'px';
+        ring.style.height       = window.innerHeight + 'px';
+        ring.style.borderRadius = '0';
+        ring.style.border       = 'none';
+      } else if (step.shape === 'circle') {
         const d = step.cr * 2;
+        ring.style.border       = '';
         ring.style.left         = (step.cx - step.cr) + 'px';
         ring.style.top          = (step.cy - step.cr) + 'px';
         ring.style.width        = d + 'px';
         ring.style.height       = d + 'px';
         ring.style.borderRadius = '50%';
       } else {
+        ring.style.border       = '';
         const { rect, pad } = step;
         ring.style.left         = (rect.left - pad) + 'px';
         ring.style.top          = (rect.top  - pad) + 'px';
@@ -2360,11 +2673,18 @@
       }
     }
 
-    _positionCard() {
+    _positionCard(step) {
       const W  = window.innerWidth, H = window.innerHeight;
-      const rr = this._ring.getBoundingClientRect();
       const cW = 272;
       const cH = this._card.offsetHeight || 160;
+
+      if (step && step.shape === 'none') {
+        this._card.style.left = Math.max(12, (W - cW) / 2) + 'px';
+        this._card.style.top  = Math.max(12, (H - cH) / 2) + 'px';
+        return;
+      }
+
+      const rr = this._ring.getBoundingClientRect();
 
       let left = rr.left + rr.width / 2 - cW / 2;
       left = Math.max(12, Math.min(W - cW - 12, left));
@@ -2452,6 +2772,7 @@
     let lastPuzzle    = null;
     let dailyPlayed   = false;
     let isTutorialGame = false;
+    let gameStarting  = false;
 
     // ── Load model ──────────────────────────────────────────
     try {
@@ -2482,6 +2803,8 @@
     if (!localStorage.getItem('synapse-seen')) {
       localStorage.setItem('synapse-seen', '1');
       await startGame(PUZZLES[0], 'Tutorial');
+      tut.onSkip     = showHome;
+      tut.onComplete = handleWin;
       tut.start();
     } else {
       showHome();
@@ -2496,6 +2819,8 @@
     });
     document.getElementById('btn-how-to').addEventListener('click', async () => {
       await startGame(PUZZLES[0], 'Tutorial');  // always software → piano for scripted tutorial
+      tut.onSkip     = showHome;
+      tut.onComplete = handleWin;
       tut.start();
     });
     document.getElementById('btn-custom').addEventListener('click', () => {
@@ -2587,10 +2912,10 @@
       showHome();
     });
     document.getElementById('btn-hint').addEventListener('click', () => {
-      // Re-run the tutorial if no context is set, otherwise show a simple toast
       if (tut.isActive()) return;
       ui.showToast('Type a word ≥50% similar to your current word to advance', 'neutral', 3500);
     });
+    document.getElementById('btn-word-hint').addEventListener('click', performHint);
     document.getElementById('btn-undo').addEventListener('click', performUndo);
     document.getElementById('btn-give-up').addEventListener('click', () => {
       ui.showToast('Better luck next time!', 'neutral', 2500);
@@ -2605,6 +2930,47 @@
     });
     document.getElementById('btn-submit').addEventListener('click', submitWord);
 
+    // ── On-screen keyboard (touch devices) ───────────────────
+    (function () {
+      const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+      if (!isTouchDevice) return;
+
+      document.body.classList.add('touch-device');
+      // Prevent native keyboard from appearing when the field is tapped/focused
+      wordInput.setAttribute('readonly', '');
+
+      const ROWS = [
+        ['Q','W','E','R','T','Y','U','I','O','P'],
+        ['A','S','D','F','G','H','J','K','L'],
+        ['⌫','Z','X','C','V','B','N','M','↵'],
+      ];
+
+      ROWS.forEach((keys, ri) => {
+        const row = document.getElementById(`osk-r${ri + 1}`);
+        keys.forEach(k => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'osk-key';
+          if (k === '⌫') { btn.classList.add('osk-wide'); btn.textContent = '⌫'; }
+          else if (k === '↵') { btn.classList.add('osk-enter'); btn.textContent = 'ENTER'; }
+          else btn.textContent = k;
+
+          btn.addEventListener('pointerdown', e => {
+            e.preventDefault(); // keep focus on input, avoid native keyboard
+            if (wordInput.disabled) return;
+            if (k === '⌫') {
+              wordInput.value = wordInput.value.slice(0, -1);
+            } else if (k === '↵') {
+              submitWord();
+            } else {
+              if (wordInput.value.length < 30) wordInput.value += k.toLowerCase();
+            }
+          });
+          row.appendChild(btn);
+        });
+      });
+    })();
+
     // ── Win screen buttons ────────────────────────────────────
     document.getElementById('btn-play-again').addEventListener('click', () => {
       startGame(puzzleMgr.getRandomPuzzle(lastPuzzle), 'Random Puzzle');
@@ -2615,6 +2981,8 @@
 
     // ── Start game ───────────────────────────────────────────
     async function startGame(puzzle, label) {
+      if (gameStarting) return;
+      gameStarting = true;
       lastPuzzle     = puzzle;
       isTutorialGame = (label === 'Tutorial');
       state.init(puzzle);
@@ -2638,7 +3006,8 @@
       renderer.addNode(puzzle.target, 'target', 1.0);
 
       tut.setContext(renderer, puzzle);
-      ui.setInputEnabled(true);
+      ui.setInputEnabled(true, state.hintsLeft);
+      gameStarting = false;
     }
 
     // ── Submit word ──────────────────────────────────────────
@@ -2651,6 +3020,7 @@
         ui.showToast('Please enter a valid word (letters only, 2–28 chars)', 'error');
         ui.flashRejected();
         ui.clearInput();
+        state.rejectedCount++;
         return;
       }
 
@@ -2659,12 +3029,21 @@
         ui.showToast('You\'ve already used that word!', 'warning');
         ui.flashRejected();
         ui.clearInput();
+        state.rejectedCount++;
         return;
       }
 
       ui.setInputEnabled(false);
 
       // ── Tutorial scripted-word enforcement ─────────────────
+      // Block typing altogether while waiting for the player to click undo.
+      if (tut.isActive() && tut.isWaitingForUndo()) {
+        ui.showToast('Click the ↩ UNDO button first!', 'warning', 2000);
+        ui.flashRejected();
+        ui.clearInput();
+        ui.setInputEnabled(true, state.hintsLeft);
+        return;
+      }
       // If the tutorial is expecting a specific word, redirect the player
       // before even hitting the dictionary or similarity APIs.
       if (tut.isActive() && tut.isWaitingForWord() && !tut.isScriptedMatch(raw)) {
@@ -2673,7 +3052,7 @@
           ui.showToast(`For the tutorial, type "${expected.toUpperCase()}"`, 'warning', 2500);
           ui.flashRejected();
           ui.clearInput();
-          ui.setInputEnabled(true);
+          ui.setInputEnabled(true, state.hintsLeft);
           return;
         }
       }
@@ -2685,7 +3064,8 @@
         if (!isValid) {
           ui.showToast(`"${raw}" is not a recognised English word`, 'error');
           ui.flashRejected();
-          ui.setInputEnabled(true);
+          ui.setInputEnabled(true, state.hintsLeft);
+          state.rejectedCount++;
           return;
         }
       }
@@ -2699,15 +3079,16 @@
           embedder.getSimilarity(raw, state.puzzle.target),
         ]);
 
-        // Check minimum similarity threshold
-        if (stepSim < CFG.MIN_SIM) {
+        // Check minimum similarity threshold (scripted tutorial words always pass)
+        if (!isScripted && stepSim < CFG.MIN_SIM) {
           const pct = (stepSim * 100).toFixed(1);
           ui.showToast(
             `No link — "${raw}" (${pct}%) is too distant from "${state.currentWord}". Need ≥${Math.round(CFG.MIN_SIM * 100)}%.`,
             'error', 3200
           );
           ui.flashRejected();
-          ui.setInputEnabled(true);
+          ui.setInputEnabled(true, state.hintsLeft);
+          state.rejectedCount++;
           return;
         }
 
@@ -2716,6 +3097,7 @@
         ui.setCurrentWord(raw);
         ui.updateSteps(state.steps);
         ui.updateUndoButton(state.undosLeft, state.canUndo());
+        ui.updateHintButton(state.hintsLeft);
         ui.flashAccepted();
 
         // Update canvas — keep the start node styled as 'start', not 'visited'
@@ -2723,16 +3105,15 @@
         renderer.setNodeType(prevWord, prevWord === state.puzzle.start ? 'start' : 'visited');
         renderer.addNode(raw, 'current', targetSim);
 
-        // Check win BEFORE tutorial callback so we don't schedule a dead spotlight
-        if (state.isWon(raw, targetSim)) {
-          tut.end();
+        // During the tutorial, let it control the win moment via onComplete
+        if (state.isWon(raw, targetSim) && !tut.isActive()) {
           const pct = (targetSim * 100).toFixed(0);
           ui.showToast(`Linked to "${state.puzzle.target}"! (${pct}%)`, 'success', 2000);
           await handleWin();
           return;
         }
 
-        // Non-winning step: advance tutorial overlay if it's waiting
+        // Non-winning step (or tutorial is intercepting the win): advance tutorial
         tut.onWordAccepted();
 
         const stepPct = (stepSim * 100).toFixed(0);
@@ -2745,7 +3126,7 @@
         ui.showToast('Something went wrong — please try again', 'error');
       }
 
-      ui.setInputEnabled(true);
+      ui.setInputEnabled(true, state.hintsLeft);
     }
 
     // ── Win ──────────────────────────────────────────────────
@@ -2764,13 +3145,99 @@
       await new Promise(r => setTimeout(r, 900));
       document.getElementById('btn-play-again').textContent =
         isTutorialGame ? 'Start Game' : 'Play Again';
+
+      // Ensure the target word appears at the end of the path on the win screen
+      if (state.path[state.path.length - 1].toLowerCase() !== state.puzzle.target.toLowerCase()) {
+        state.path.push(state.puzzle.target);
+      }
+
       ui.showWinScreen(state);
+    }
+
+    // ── Hint ─────────────────────────────────────────────────
+    async function performHint() {
+      if (state.hintsLeft <= 0) return;
+      if (tut.isActive()) return;
+      if (state.status !== 'playing') return;
+
+      ui.setInputEnabled(false, 0);
+      ui.showToast('Finding a bridge word…', 'neutral', 1500);
+
+      try {
+        const hintWord = await getHintWord();
+        if (!hintWord) {
+          ui.showToast('No hint found — try exploring freely!', 'warning', 2500);
+        } else {
+          state.hintsLeft--;
+          ui.updateHintButton(state.hintsLeft);
+          document.getElementById('word-input').value = hintWord;
+          const left = state.hintsLeft;
+          ui.showToast(`💡 Try: ${hintWord.toUpperCase()} — ${left} hint${left !== 1 ? 's' : ''} left`, 'warning', 3000);
+        }
+      } catch (err) {
+        console.error(err);
+        ui.showToast('Hint failed — please try again', 'error');
+      }
+
+      ui.setInputEnabled(true, state.hintsLeft);
+    }
+
+    async function getHintWord() {
+      const usedSet = new Set(state.path.map(w => w.toLowerCase()));
+      usedSet.add(state.puzzle.target.toLowerCase());
+
+      // Build flat candidate list from all WORD_POOL categories
+      const candidates = [...new Set(Object.values(WORD_POOL).flat())];
+
+      // Get current and target embeddings
+      const [curVec, tgtVec] = await Promise.all([
+        embedder.getEmbedding(state.currentWord),
+        embedder.getEmbedding(state.puzzle.target),
+      ]);
+
+      // How far the current word already is from the target
+      const curTargetSim = embedder.dot(curVec, tgtVec);
+
+      // Cap the hint's proximity to target based on current position:
+      // the closer you already are, the smaller the allowed jump
+      let maxBoost;
+      if      (curTargetSim < 0.20) maxBoost = 0.20;
+      else if (curTargetSim < 0.30) maxBoost = 0.15;
+      else if (curTargetSim < 0.40) maxBoost = 0.09;
+      else                          maxBoost = 0.05;
+      const maxTargetSim = curTargetSim + maxBoost;
+
+      // Midpoint vector (average of current + target directions)
+      const midVec = new Float32Array(512);
+      for (let i = 0; i < 512; i++) midVec[i] = (curVec[i] + tgtVec[i]) / 2;
+
+      // Score each unused candidate: similarity to midpoint,
+      // filtered by reachability and the proximity cap
+      let bestWord = null;
+      let bestScore = -Infinity;
+
+      for (const word of candidates) {
+        if (usedSet.has(word.toLowerCase())) continue;
+        const vec       = await embedder.getEmbedding(word);
+        const stepSim   = embedder.dot(vec, curVec);    // reachability from current
+        if (stepSim < CFG.MIN_SIM) continue;            // skip unreachable words
+        const targetSim = embedder.dot(vec, tgtVec);    // proximity to target
+        if (targetSim > maxTargetSim) continue;         // skip words too close to target
+        const midSim    = embedder.dot(vec, midVec);    // closeness to midpoint
+        if (midSim > bestScore) {
+          bestScore = midSim;
+          bestWord  = word;
+        }
+      }
+
+      return bestWord;
     }
 
     // ── Undo ─────────────────────────────────────────────────
     function performUndo() {
       if (!state.canUndo()) return;
-      if (tut.isActive()) return;
+      // During the tutorial, only allow undo when we're explicitly waiting for one
+      if (tut.isActive() && !tut.isWaitingForUndo()) return;
 
       const removed = state.undo();
       if (!removed) return;
@@ -2782,6 +3249,8 @@
       ui.updateUndoButton(state.undosLeft, state.canUndo());
       const left = state.undosLeft;
       ui.showToast(`↩ Undid "${removed}" — ${left} undo${left !== 1 ? 's' : ''} left`, 'neutral', 2000);
+
+      if (tut.isWaitingForUndo()) tut.onUndoPerformed();
     }
 
   })();
