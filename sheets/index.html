@@ -92,6 +92,29 @@
     }
     .t-select:focus { outline: none; border-color: #5b9bd5; }
     .t-select.active { background: #1976d2; border-color: #1565c0; color: #fff; }
+
+    #manualPanel {
+      margin-top: 32px; background: #1e1e1e; border: 1px solid #333;
+      border-radius: 8px; padding: 14px 16px;
+    }
+    #manualPanel h3 { font-size: 0.85rem; color: #888; margin-bottom: 12px; font-weight: 500; }
+    .m-field {
+      display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px;
+    }
+    .m-field label { font-size: 0.75rem; color: #666; }
+    .m-field input {
+      padding: 7px 10px; border: 1px solid #333; border-radius: 5px;
+      background: #2a2a2a; color: #e0e0e0; font-size: 0.88rem;
+    }
+    .m-field input:focus { outline: none; border-color: #5b9bd5; }
+    #manualSend {
+      width: 100%; margin-top: 4px; padding: 8px;
+      border: 1px solid #333; border-radius: 5px;
+      background: #2a2a2a; color: #aaa; cursor: pointer;
+      font-size: 0.85rem; font-weight: 500; transition: background .1s;
+    }
+    #manualSend:hover { background: #1a2d42; border-color: #5b9bd5; color: #e0e0e0; }
+    #manualSend:active { background: #1976d2; border-color: #1565c0; color: #fff; }
   </style>
 </head>
 <body>
@@ -104,12 +127,22 @@
   <div id="corsNote">Search failed. Check your internet connection and try again.</div>
   <div id="status"></div>
   <div id="results"></div>
+
+  <div id="manualPanel">
+    <h3>Manual Send</h3>
+    <div class="m-field"><label>Product ID</label><input id="m-id" type="text" placeholder="e.g. 123456" /></div>
+    <div class="m-field"><label>Title</label><input id="m-title" type="text" placeholder="Song title" /></div>
+    <div class="m-field"><label>Artist</label><input id="m-artist" type="text" placeholder="Artist name" /></div>
+    <div class="m-field"><label>Cover URL</label><input id="m-cover" type="url" placeholder="https://…" /></div>
+    <div class="m-field"><label>Semitones</label><input id="m-semitones" type="number" value="0" min="-6" max="6" /></div>
+    <button id="manualSend">Send to device</button>
+  </div>
 </div>
 
 <script>
   const TOPIC      = 'sheetshare-home'; // must match NTFY_TOPIC in SheetShareApplication.kt
   const SEARCH_URL = 'https://mobileapi.sheetmusicdirect.com/1.0/devices/82419D36-C4A5-4861-91D2-BB8B648FC107/searchwithfacets';
-  const PROXY      = url => `https://proxy.corsfix.com/?${url}`;
+  const PROXY      = url => `https://corss.ingel.ing/?url=${encodeURIComponent(url)}`;
   // ── Search ────────────────────────────────────────────────────────────────
   const SUGGEST_URL = 'https://www.sheetmusicdirect.com/api/frontend/SearchKeywordSuggest.ashx';
 
@@ -305,13 +338,28 @@
   }
 
   async function sendToDevice(payload) {
-    const res = await fetch(`https://ntfy.sh/${encodeURIComponent(TOPIC)}`, {
+    const res = await fetch(`https://ntfy.ingel.ing/${encodeURIComponent(TOPIC)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error(`ntfy ${res.status}`);
   }
+
+  // ── Manual Send ───────────────────────────────────────────────────────────
+  document.getElementById('manualSend').addEventListener('click', async () => {
+    const productId = document.getElementById('m-id').value.trim();
+    const title     = document.getElementById('m-title').value.trim();
+    const artist    = document.getElementById('m-artist').value.trim();
+    const coverUrl  = document.getElementById('m-cover').value.trim();
+    const semitones = parseInt(document.getElementById('m-semitones').value) || 0;
+    if (!productId || !title) {
+      statusEl.className = 'error';
+      statusEl.textContent = 'Product ID and Title are required.';
+      return;
+    }
+    await openSongAt(productId, title, semitones, coverUrl, artist);
+  });
 
   function esc(s) {
     return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
