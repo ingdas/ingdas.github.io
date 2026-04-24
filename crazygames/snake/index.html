@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Snake</title>
+  <script src="/sdk/cg-sdk.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d0d0d;
+      color: #e8e8e8;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #4ade80;
+      margin-bottom: 8px;
+    }
+
+    #score-line {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 16px;
+      height: 18px;
+    }
+
+    #best-score {
+      margin-left: 16px;
+      color: #facc15;
+    }
+
+    canvas {
+      border: 2px solid #222;
+      border-radius: 8px;
+      display: block;
+      image-rendering: pixelated;
+    }
+
+    #message {
+      margin-top: 16px;
+      font-size: 14px;
+      color: #888;
+      height: 20px;
+      text-align: center;
+    }
+
+    #toolbar {
+      margin-top: 16px;
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid #333;
+      background: #1a1a1a;
+      color: #e8e8e8;
+      transition: background 0.15s;
+    }
+    button:hover { background: #252525; }
+    button:active { background: #111; }
+
+    #btn-who {
+      border-color: #6c63ff44;
+      color: #a29bfe;
+    }
+
+    /* D-pad for mobile */
+    #dpad {
+      display: none;
+      margin-top: 20px;
+      display: grid;
+      grid-template-columns: 44px 44px 44px;
+      grid-template-rows: 44px 44px 44px;
+      gap: 4px;
+    }
+    .dpad-btn {
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 8px;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .dpad-up    { grid-column: 2; grid-row: 1; }
+    .dpad-left  { grid-column: 1; grid-row: 2; }
+    .dpad-right { grid-column: 3; grid-row: 2; }
+    .dpad-down  { grid-column: 2; grid-row: 3; }
+
+    @media (hover: none) {
+      #dpad { display: grid; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Snake</h1>
+  <div id="score-line">Score: <span id="score">0</span><span id="best-score"></span></div>
+  <canvas id="canvas"></canvas>
+  <div id="message">Press any arrow key or tap to start</div>
+
+  <div id="toolbar">
+    <button id="btn-restart">Restart</button>
+    <button id="btn-who">Who am I?</button>
+  </div>
+
+  <div id="dpad">
+    <button class="dpad-btn dpad-up"    data-dir="UP">▲</button>
+    <button class="dpad-btn dpad-left"  data-dir="LEFT">◀</button>
+    <button class="dpad-btn dpad-right" data-dir="RIGHT">▶</button>
+    <button class="dpad-btn dpad-down"  data-dir="DOWN">▼</button>
+  </div>
+
+  <script>
+    const SDK = window.CrazyGames.SDK
+    const canvas = document.getElementById('canvas')
+    const ctx = canvas.getContext('2d')
+    const scoreEl = document.getElementById('score')
+    const bestScoreEl = document.getElementById('best-score')
+    const messageEl = document.getElementById('message')
+
+    const CELL = 20
+    const COLS = 20
+    const ROWS = 20
+    canvas.width  = COLS * CELL
+    canvas.height = ROWS * CELL
+
+    const COLORS = {
+      bg:       '#111111',
+      grid:     '#161616',
+      snake:    '#4ade80',
+      snakeHead:'#22c55e',
+      food:     '#f87171',
+      text:     '#e8e8e8',
+    }
+
+    // Game state
+    let snake, dir, nextDir, food, score, state, loopId
+    // state: 'idle' | 'playing' | 'dead'
+
+    function init() {
+      snake   = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }]
+      dir     = { x: 1, y: 0 }
+      nextDir = { x: 1, y: 0 }
+      food    = spawnFood()
+      score   = 0
+      state   = 'idle'
+      scoreEl.textContent = '0'
+      messageEl.textContent = 'Press any arrow key or tap to start'
+      if (loopId) clearInterval(loopId)
+      loopId = null
+      draw()
+    }
+
+    function spawnFood() {
+      const occupied = new Set(snake.map(s => `${s.x},${s.y}`))
+      let pos
+      do { pos = { x: rnd(COLS), y: rnd(ROWS) } }
+      while (occupied.has(`${pos.x},${pos.y}`))
+      return pos
+    }
+
+    function rnd(n) { return Math.floor(Math.random() * n) }
+
+    function startGame() {
+      if (state === 'playing') return
+      state = 'playing'
+      messageEl.textContent = ''
+      SDK.game.gameplayStart()
+      loopId = setInterval(tick, 130)
+    }
+
+    function tick() {
+      dir = nextDir
+
+      const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y }
+
+      // Wall collision
+      if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) {
+        return gameOver()
+      }
+      // Self collision
+      if (snake.some(s => s.x === head.x && s.y === head.y)) {
+        return gameOver()
+      }
+
+      snake.unshift(head)
+
+      if (head.x === food.x && head.y === food.y) {
+        score++
+        scoreEl.textContent = score
+        food = spawnFood()
+      } else {
+        snake.pop()
+      }
+
+      draw()
+    }
+
+    function gameOver() {
+      clearInterval(loopId)
+      loopId = null
+      state = 'dead'
+      SDK.game.gameplayStop()
+      messageEl.textContent = 'Game over! Score: ' + score
+
+      SDK.score.submitScore(score).then(({ highScore }) => {
+        bestScoreEl.textContent = '· Best: ' + highScore
+      })
+
+      // Request a midgame ad — the portal will show it, then call onAdFinished
+      SDK.ad.requestInterstitialAd({
+        onAdFinished: () => {
+          messageEl.textContent = 'Press any key to play again'
+        },
+      })
+
+      draw()
+    }
+
+    function draw() {
+      // Background
+      ctx.fillStyle = COLORS.bg
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+      // Grid lines
+      ctx.strokeStyle = COLORS.grid
+      ctx.lineWidth = 0.5
+      for (let x = 0; x <= COLS; x++) {
+        ctx.beginPath(); ctx.moveTo(x * CELL, 0); ctx.lineTo(x * CELL, canvas.height); ctx.stroke()
+      }
+      for (let y = 0; y <= ROWS; y++) {
+        ctx.beginPath(); ctx.moveTo(0, y * CELL); ctx.lineTo(canvas.width, y * CELL); ctx.stroke()
+      }
+
+      // Food
+      ctx.fillStyle = COLORS.food
+      const fr = CELL * 0.35
+      ctx.beginPath()
+      ctx.arc(food.x * CELL + CELL / 2, food.y * CELL + CELL / 2, fr, 0, Math.PI * 2)
+      ctx.fill()
+
+      // Snake
+      snake.forEach((seg, i) => {
+        ctx.fillStyle = i === 0 ? COLORS.snakeHead : COLORS.snake
+        const pad = i === 0 ? 1 : 2
+        ctx.beginPath()
+        ctx.roundRect(seg.x * CELL + pad, seg.y * CELL + pad, CELL - pad * 2, CELL - pad * 2, 4)
+        ctx.fill()
+      })
+
+      // Dead overlay
+      if (state === 'dead') {
+        ctx.fillStyle = 'rgba(0,0,0,0.5)'
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+      }
+    }
+
+    // Input — keyboard
+    const DIR_MAP = {
+      ArrowUp:    { x: 0, y: -1 }, w: { x: 0, y: -1 },
+      ArrowDown:  { x: 0, y:  1 }, s: { x: 0, y:  1 },
+      ArrowLeft:  { x: -1, y: 0 }, a: { x: -1, y: 0 },
+      ArrowRight: { x: 1,  y: 0 }, d: { x: 1,  y: 0 },
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === ' ' || e.key === 'Enter') {
+        if (state === 'idle' || state === 'dead') { init(); startGame() }
+        return
+      }
+      const newDir = DIR_MAP[e.key]
+      if (!newDir) return
+      e.preventDefault()
+      if (state === 'idle') startGame()
+      if (state !== 'playing') return
+      // Prevent reversing
+      if (newDir.x !== -dir.x || newDir.y !== -dir.y) nextDir = newDir
+    })
+
+    // D-pad
+    document.querySelectorAll('.dpad-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const d = btn.dataset.dir
+        const map = { UP: { x:0,y:-1 }, DOWN: { x:0,y:1 }, LEFT: { x:-1,y:0 }, RIGHT: { x:1,y:0 } }
+        const newDir = map[d]
+        if (!newDir) return
+        if (state === 'idle' || state === 'dead') { init(); startGame(); return }
+        if (newDir.x !== -dir.x || newDir.y !== -dir.y) nextDir = newDir
+      })
+    })
+
+    // Canvas tap to start
+    canvas.addEventListener('click', () => {
+      if (state === 'idle' || state === 'dead') { init(); startGame() }
+    })
+
+    // Toolbar
+    document.getElementById('btn-restart').addEventListener('click', () => {
+      init()
+      startGame()
+    })
+
+    document.getElementById('btn-who').addEventListener('click', async () => {
+      messageEl.textContent = 'Fetching user…'
+      const user = await SDK.user.getUser()
+      messageEl.textContent = user
+        ? `You are ${user.username} (${user.id})`
+        : 'Not logged in'
+    })
+
+    init()
+  </script>
+</body>
+</html>
