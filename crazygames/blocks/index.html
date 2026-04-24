@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Block Breaker</title>
-  <script src="/sdk/cg-sdk.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -166,7 +165,6 @@
       if (state === 'playing') return
       state = 'playing'
       messageEl.textContent = ''
-      SDK.game.gameplayStart()
       rafId = requestAnimationFrame(loop)
     }
 
@@ -239,7 +237,6 @@
     function endGame(result) {
       if (rafId) { cancelAnimationFrame(rafId); rafId = null }
       state = result
-      SDK.game.gameplayStop()
       messageEl.textContent = (result === 'win' ? 'You win!' : 'Game over!') + ' Score: ' + score
 
       SDK.score.submitScore(score).then(({ highScore }) => {
