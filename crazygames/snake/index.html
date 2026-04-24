@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Snake</title>
-  <script src="/sdk/cg-sdk.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -183,7 +182,6 @@
       if (state === 'playing') return
       state = 'playing'
       messageEl.textContent = ''
-      SDK.game.gameplayStart()
       loopId = setInterval(tick, 130)
     }
 
@@ -218,7 +216,6 @@
       clearInterval(loopId)
       loopId = null
       state = 'dead'
-      SDK.game.gameplayStop()
       messageEl.textContent = 'Game over! Score: ' + score
 
       SDK.score.submitScore(score).then(({ highScore }) => {
