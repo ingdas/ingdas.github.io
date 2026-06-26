@@ -195,18 +195,21 @@
       if (focusedIdx >= 0) items[focusedIdx].classList.remove('focused');
       focusedIdx = Math.max(focusedIdx - 1, 0);
       items[focusedIdx].classList.add('focused');
-    } else if (e.key === 'Enter' && focusedIdx >= 0) {
-      e.preventDefault();
-      const text = items[focusedIdx].textContent;
-      searchBox.value = text;
+    } else if (e.key === 'Enter') {
+      if (focusedIdx >= 0) {
+        e.preventDefault();
+        const text = items[focusedIdx].textContent;
+        searchBox.value = text;
+        doSearch(text);
+      }
       hideSuggestions();
-      doSearch(text);
     } else if (e.key === 'Escape') {
       hideSuggestions();
     }
   });
 
   searchBox.addEventListener('blur', () => setTimeout(hideSuggestions, 150));
+  searchBox.addEventListener('search', () => hideSuggestions());
 
   // ── Search ────────────────────────────────────────────────────────────────
   searchBox.addEventListener('input', () => {
@@ -331,8 +334,9 @@
   async function openSongAt(productId, title, semitones, coverUrl, artist) {
     statusEl.className = '';
     statusEl.textContent = 'Sending…';
-    await sendToDevice({ type: 'song', productId, title, coverUrl, artist });
-    await sendToDevice({ type: 'transpose', semitones });
+    // Send transpose as part of the song message so the launch is atomic — a separate
+    // transpose message races the song load on the device and can be lost.
+    await sendToDevice({ type: 'song', productId, title, coverUrl, artist, semitones });
     statusEl.className = 'sent';
     statusEl.textContent = `✓ "${title}"` + (semitones !== 0 ? ` at ${semitones > 0 ? '+' : ''}${semitones}` : '');
   }
