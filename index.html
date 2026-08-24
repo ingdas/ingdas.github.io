@@ -9,13 +9,22 @@
   <title>Ingmar Dasseville</title>
   <meta name="description" content="">
   <meta name="viewport" content="width=device-width">
-  <link href="//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Lato:400,700%7COpen+Sans:400,700" rel="stylesheet">
+  <link href="https://netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet">
 
   <link rel="stylesheet" href="css/normalize.min.css">
   <link rel="stylesheet" href="css/main.css">
-  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
   <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.10.1.min.js"><\/script>')</script>
-  <script src="http://code.jquery.com/jquery-migrate-1.2.1.js"></script>
+  <script>
+    // jQuery 1.9 dropped $.browser. The hashchange plugin below still reads
+    // $.browser.msie to decide whether to install its legacy IE fallback, so
+    // provide just that much rather than pulling in all of jquery-migrate.
+    jQuery.browser = jQuery.browser || (function (ua) {
+      var m = /(msie) ([\w.]+)/.exec(ua) || /(trident)\/.*rv:([\w.]+)/.exec(ua) || [];
+      return { msie: m[1] === 'msie' || m[1] === 'trident', version: m[2] || '0' };
+    }(navigator.userAgent.toLowerCase()));
+  </script>
   <script src="js/vendor/jquery.hashchange.min.js"></script>
   <script src="js/vendor/jquery.easytabs.min.js"></script>
 
