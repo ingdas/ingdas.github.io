@@ -377,6 +377,143 @@ body {width: 92%; margin: 0 auto} /* Center page without wrapper */
   clear: both;
 }
 
+/* Resume CV download */
+.cv-download{
+  margin-bottom: 2em;
+}
+.cv-download .btn{
+  margin: 0;
+}
+
+/* Resume intro */
+.resume-intro{
+  margin-bottom: 2em;
+  padding-left: 1em;
+  border-left: 3px solid #f1f1f1;
+  color: #777;
+  font-size: 1.0625em;
+  line-height: 1.6em;
+}
+
+/* Employer / institution line under a job or degree title */
+.work li .org{
+  clear: both;
+  margin-bottom: 0.75em;
+  font-size: 0.875em;
+  line-height: 1.5em;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #999;
+}
+/* Secondary remark under an entry */
+.work li .note{
+  font-size: 0.875em;
+  color: #999;
+}
+
+/* Multiple roles at the same employer */
+.roles{
+  clear: both;
+  margin-bottom: 1.5em;
+}
+.roles li{
+  border-bottom: none;
+  margin-bottom: 0.5em;
+  padding-bottom: 0.5em;
+  overflow: hidden;
+}
+.roles li h6{
+  float: left;
+  margin: 0;
+  font-size: 1em;
+  line-height: 1.5em;
+  font-weight: normal;
+  color: #555;
+}
+.roles li span{
+  float: right;
+  margin-top: 0.3em;
+}
+
+/* Skill tags */
+.tags{
+  margin-bottom: 1.5em;
+  overflow: hidden;
+}
+.tags li{
+  float: left;
+  margin: 0 6px 6px 0;
+}
+.tags li .label{
+  display: inline-block;
+  padding: .4em .7em;
+  font-size: 12px;
+  font-weight: normal;
+  white-space: normal;
+}
+
+/* Simple key/value facts (languages, ...) */
+.facts{
+  margin-bottom: 1.5em;
+}
+.facts li{
+  overflow: hidden;
+  padding: 0.35em 0;
+  border-bottom: 1px solid #f1f1f1;
+}
+.facts li strong{
+  float: left;
+  font-weight: bold;
+  color: #555;
+}
+.facts li span{
+  float: right;
+  font-size: 0.875em;
+  color: #999;
+}
+
+/* Hobbies in the sidebar */
+.hobbies li{
+  margin-bottom: 1.5em;
+}
+.hobbies li h5{
+  float: none;
+  font-size: 1.125em;
+  margin-bottom: 0.4em;
+}
+.hobbies li p{
+  font-size: 0.875em;
+  line-height: 1.6em;
+  margin-bottom: 1em;
+  color: #777;
+}
+
+/* Section headings inside the resume */
+#resume h3 i{
+  margin-right: 8px;
+  color: #ccc;
+  font-size: 0.8em;
+}
+
+/* On narrow screens, stack the entry title and its date instead of floating
+   them against each other. */
+@media only screen and (max-width: 767px){
+  .work li h5,
+  .roles li h6{
+    float: none;
+    margin-bottom: 0.4em;
+  }
+  .work li > span.label,
+  .roles li span{
+    float: none;
+    display: inline-block;
+    margin: 0 0 0.75em 0;
+  }
+  .roles li{
+    padding-bottom: 0;
+  }
+}
+
 
 /* Contests */
 .contests li{
@@ -454,7 +591,7 @@ body {width: 92%; margin: 0 auto} /* Center page without wrapper */
   color: #fff;
   font-weight: bold;
   font-size: 13px;
-  font-family:'Open Sans', sans-serif
+  font-family:'Open Sans', sans-serif;
   line-height: 1;
   *display:inline;
   *zoom:1;
