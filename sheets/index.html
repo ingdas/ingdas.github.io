@@ -134,7 +134,7 @@
     <div class="m-field"><label>Title</label><input id="m-title" type="text" placeholder="Song title" /></div>
     <div class="m-field"><label>Artist</label><input id="m-artist" type="text" placeholder="Artist name" /></div>
     <div class="m-field"><label>Cover URL</label><input id="m-cover" type="url" placeholder="https://…" /></div>
-    <div class="m-field"><label>Semitones</label><input id="m-semitones" type="number" value="0" min="-6" max="6" /></div>
+    <div class="m-field"><label>Semitones</label><input id="m-semitones" type="number" placeholder="saved key" min="-6" max="6" /></div>
     <button id="manualSend">Send to device</button>
   </div>
 </div>
@@ -244,18 +244,19 @@
   }
 
   function renderResults(products) {
-    products = [...products].sort((a, b) => {
-      const titleCmp = a.title.localeCompare(b.title);
-      if (titleCmp !== 0) return titleCmp;
-      const isPV = s => /piano\s*&\s*vocal/i.test(s ?? '');
-      return isPV(b.arrangement) - isPV(a.arrangement);
-    });
+    // Piano & vocal arrangements float to the top (including the "Piano, Vocal & Guitar Chords
+    // (Right-Hand Melody)" variants), everything else keeps the relevance order the server sent.
+    // Array#sort is stable, so the server's ranking survives inside each of the two buckets.
+    const isPV = s => /piano.*vocal/i.test(s ?? '');
+    products = [...products].sort((a, b) => isPV(b.arrangement) - isPV(a.arrangement));
     resultsEl.innerHTML = '';
     for (const p of products) {
       const div = document.createElement('div');
       div.className = 'song';
 
-      let semitone = 0;
+      // null means "no preference": the device then keeps whatever key this song was last
+      // left in, instead of a default 0 silently resetting it.
+      let semitone = null;
 
       const top = document.createElement('div');
       top.className = 'song-top';
@@ -276,7 +277,7 @@
         btn.textContent = 'Open on device';
         btn.addEventListener('click', () => {
           btn.classList.add('active');
-          openSongAt(p.id, p.title, 0, p.url_album_img, p.artist);
+          openSongAt(p.id, p.title, null, p.url_album_img, p.artist);
         });
         div.appendChild(btn);
       } else {
@@ -335,10 +336,14 @@
     statusEl.className = '';
     statusEl.textContent = 'Sending…';
     // Send transpose as part of the song message so the launch is atomic — a separate
-    // transpose message races the song load on the device and can be lost.
-    await sendToDevice({ type: 'song', productId, title, coverUrl, artist, semitones });
+    // transpose message races the song load on the device and can be lost. Leaving the field
+    // out entirely is how the device is told to keep the song's own remembered key.
+    const payload = { type: 'song', productId, title, coverUrl, artist };
+    if (semitones !== null) payload.semitones = semitones;
+    await sendToDevice(payload);
     statusEl.className = 'sent';
-    statusEl.textContent = `✓ "${title}"` + (semitones !== 0 ? ` at ${semitones > 0 ? '+' : ''}${semitones}` : '');
+    statusEl.textContent = `✓ "${title}"` +
+      (semitones === null ? ' (saved key)' : semitones !== 0 ? ` at ${semitones > 0 ? '+' : ''}${semitones}` : '');
   }
 
   async function sendToDevice(payload) {
@@ -356,7 +361,8 @@
     const title     = document.getElementById('m-title').value.trim();
     const artist    = document.getElementById('m-artist').value.trim();
     const coverUrl  = document.getElementById('m-cover').value.trim();
-    const semitones = parseInt(document.getElementById('m-semitones').value) || 0;
+    const rawSemitones = document.getElementById('m-semitones').value.trim();
+    const semitones = rawSemitones === '' ? null : (parseInt(rawSemitones) || 0);
     if (!productId || !title) {
       statusEl.className = 'error';
       statusEl.textContent = 'Product ID and Title are required.';
