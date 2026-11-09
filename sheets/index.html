@@ -260,7 +260,9 @@
 
       const top = document.createElement('div');
       top.className = 'song-top';
-      const isPdf = p.score_type === 'Pdf';
+      // Sheets on the MuseScore viewer are listed as Pdf and non-transposable, but do transpose.
+      // What gives them away is the score file that PDF-only arrangements don't have.
+      const canTranspose = p.score_type !== 'Pdf' || !!p.url_scorch_file;
       top.innerHTML = `
         <img src="${esc(p.url_album_img)}" alt="" loading="lazy" onerror="this.style.display='none'" />
         <div class="info">
@@ -271,7 +273,7 @@
       `;
       div.appendChild(top);
 
-      if (isPdf) {
+      if (!canTranspose) {
         const btn = document.createElement('button');
         btn.className = 'open-btn';
         btn.textContent = 'Open on device';
