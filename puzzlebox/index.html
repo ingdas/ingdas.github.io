@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <title>Puzzlebox: 38 Logic Puzzles</title>
+    <meta
+      name="description"
+      content="Sudoku, Minesweeper, Nonograms and 35 more hand-drawn logic puzzles in one box. Endless puzzles, every difficulty, no download."
+    />
+    <!--
+      The tab icon and `theme-color` are set at boot by `applyBrandToDocument()`
+      (src/ui/brand.ts), from the same mark and palette the rest of the page draws with.
+      Deliberately not a data URI pasted in here: a second copy of the logo is a copy that
+      goes stale the first time the mark changes, which is what used to happen.
+    -->
+    <!--
+      CrazyGames SDK (https://docs.crazygames.com/sdk/intro/). Loaded async so it never
+      blocks the page: if this request fails (blocked, offline, not embedded there) the
+      game runs exactly as it does anywhere else — see src/crazygames/index.ts, whose
+      every export is a safe no-op when `window.CrazyGames` never appears.
+    -->
+    <script async src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+    <script type="module" crossorigin src="./assets/index-DIYwYEVR.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Cjklewsu.css">
+  </head>
+  <body>
+    <!--
+      The loading screen, up from the very first paint until the script has arrived and
+      the splash (or, in a portal's frame, the first screen) takes over — see
+      src/ui/boot.ts. Plain paper and a pencil line writing itself; nothing to read, so
+      nothing to translate. The {{palette.*}} colours are written in from
+      src/framework/palette.ts at build time (vite.config.ts), so it is the same paper.
+    -->
+    <style>
+      html {
+        background: #fbf6ea;
+      }
+      #boot {
+        position: fixed;
+        inset: 0;
+        z-index: 300;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fbf6ea;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+      }
+      #boot.lifting {
+        opacity: 0;
+      }
+      #boot svg {
+        width: 132px;
+        height: 18px;
+        overflow: visible;
+        /* Only once the wait is long enough to notice: a fast load never sees it. */
+        opacity: 0;
+        animation: boot-show 0.3s ease 0.45s forwards;
+      }
+      #boot path {
+        fill: none;
+        stroke: #6a6676;
+        stroke-width: 3.5;
+        stroke-linecap: round;
+        stroke-dasharray: 150;
+        stroke-dashoffset: 150;
+        animation: boot-write 1.3s cubic-bezier(0.6, 0, 0.4, 1) 0.45s infinite;
+      }
+      @keyframes boot-show {
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes boot-write {
+        55% {
+          stroke-dashoffset: 0;
+        }
+        100% {
+          stroke-dashoffset: -150;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #boot {
+          transition: none;
+        }
+        #boot path {
+          animation: none;
+          stroke-dashoffset: 0;
+        }
+      }
+    </style>
+    <div id="boot" aria-hidden="true">
+      <svg viewBox="0 0 132 18"><path d="M5 11 C 26 4, 40 15, 62 9 S 104 3, 127 10" /></svg>
+    </div>
+    <div id="app"></div>
+    <!--
+      Ask for the hand-lettered faces the moment the stylesheet has declared them, rather
+      than when the script gets round to drawing its first word: the splash's wordmark and
+      every canvas wait on them (src/ui/fonts.ts, src/ui/boot.ts), and a font fetched
+      alongside the script is one that is already there when it runs.
+    -->
+    <script>
+      try {
+        document.fonts.load('20px "Patrick Hand"');
+        document.fonts.load('20px "Patrick Hand SC"');
+      } catch (e) {
+        /* no font loading API: the page asks again when it runs */
+      }
+    </script>
+  </body>
+</html>
